@@ -47,8 +47,9 @@ Module.register("MMM-GlassMonthlyCalendar", {
 
     // ---- Day mode (light glass) ----
     dayMode: "none", // "none" (only follow a theme's body.mm-day) | "day" | "night" | "auto"
+    sunNotification: "AMBIENT_WEATHER_DATA", // dayMode "auto" uses sunrise/sunset from MMM-GlassTempest's broadcast
     dayModeScope: "calendar", // "calendar" (this window only) | "page" (sets body.mm-day for every module)
-    latitude: null, // for dayMode "auto": light from sunrise to sunset at this location
+    latitude: null, // for dayMode "auto" when no weather broadcast has arrived: sunrise/sunset here
     longitude: null,
     dayStart: "07:00", // for dayMode "auto" when latitude/longitude are not set
     dayEnd: "19:00"
@@ -105,6 +106,10 @@ Module.register("MMM-GlassMonthlyCalendar", {
   /* ---------- calendar events ---------- */
 
   notificationReceived(notification, payload, sender) {
+    if (this.config.sunNotification && notification === this.config.sunNotification) {
+      this._receiveSunTimes(payload);
+      return;
+    }
     if (notification !== "CALENDAR_EVENTS") return;
     if (!Array.isArray(payload)) {
       Log.error(`[${this.name}] CALENDAR_EVENTS payload is not an array`, payload);
@@ -233,6 +238,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
     if (mode === "day") return true;
     if (mode === "night") return false;
     if (mode !== "auto") return null;
+    const fromWeather = this._weatherSunToday(now);
+    if (fromWeather) return now >= fromWeather.rise && now < fromWeather.set;
     const lat = Number(this.config.latitude);
     const lon = Number(this.config.longitude);
     if (this.config.latitude != null && this.config.longitude != null && isFinite(lat) && isFinite(lon)) {
@@ -248,6 +255,32 @@ Module.register("MMM-GlassMonthlyCalendar", {
     const end = mins(this.config.dayEnd) ?? 1140;
     const t = now.getHours() * 60 + now.getMinutes();
     return start <= end ? t >= start && t < end : t >= start || t < end;
+  },
+
+  // Sunrise/sunset from MMM-GlassTempest (ISO strings or timestamps for today).
+  _receiveSunTimes(payload) {
+    if (!payload || payload.sunrise == null || payload.sunset == null) return;
+    const toDate = (v) => new Date(typeof v === "number" && v < 1e12 ? v * 1000 : v);
+    const rise = toDate(payload.sunrise);
+    const set = toDate(payload.sunset);
+    if (isNaN(rise) || isNaN(set) || set <= rise) return;
+    this.weatherSun = { rise, set };
+    if (String(this.config.dayMode).toLowerCase() !== "auto") return;
+    const isDay = this._computeIsDay(new Date());
+    if (isDay !== this.isDay) {
+      this.isDay = isDay;
+      this._applyDayMode();
+    }
+  },
+
+  // Today's sunrise/sunset from the weather broadcast. Times up to 3 days old are moved to
+  // today (they shift by only a minute or two a day), e.g. just after midnight.
+  _weatherSunToday(now) {
+    if (!this.weatherSun) return null;
+    const shift = this._ordinal(now) - this._ordinal(this.weatherSun.rise);
+    if (shift < 0 || shift > 3) return null;
+    const move = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + shift, d.getHours(), d.getMinutes(), d.getSeconds());
+    return { rise: move(this.weatherSun.rise), set: move(this.weatherSun.set) };
   },
 
   _applyDayMode() {

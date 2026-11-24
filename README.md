@@ -103,15 +103,19 @@ MagicMirror itself has no day/night theme, so the calendar can switch itself:
 
 ```js
 config: {
-  dayMode: "auto",     // light from sunrise to sunset
-  latitude: 41.88,     // your location (decimal degrees; west is negative)
-  longitude: -87.63
+  dayMode: "auto"      // light from sunrise to sunset
 }
 ```
 
+With `"auto"`, the calendar gets today's sunrise and sunset from
+[MMM-GlassTempest](https://github.com/scottshaffer/MMM-GlassTempest), which broadcasts them with
+every weather update. Nothing else is needed if GlassTempest is on the mirror.
+
+- Without GlassTempest (or until its first update after startup), it uses `latitude` and
+  `longitude` if you set them, and otherwise is light from `dayStart` to `dayEnd` (07:00–19:00).
+- If you changed GlassTempest's `weatherNotification`, set `sunNotification` to the same name.
+  Any module that sends `sunrise` and `sunset` in a notification works the same way.
 - `dayMode: "day"` keeps it light all the time; `"night"` keeps it dark.
-- With `"auto"` and no `latitude`/`longitude`, it is light from `dayStart` to `dayEnd`
-  (07:00–19:00 by default).
 - `dayModeScope: "calendar"` (the default) lightens only this window. The clock and weather cards
   stay in their dark glass, which is readable in daylight.
 - `dayModeScope: "page"` instead puts `mm-day` on the whole page, for themes and modules that
@@ -167,6 +171,7 @@ Every option at its default:
 
     // Day mode
     dayMode: "none",               // "none" | "day" | "night" | "auto"
+    sunNotification: "AMBIENT_WEATHER_DATA",
     dayModeScope: "calendar",      // "calendar" | "page"
     latitude: null,
     longitude: null,
@@ -215,7 +220,8 @@ Options added by this module:
 | `reduceMotion` | `false` | Same as the Pi profile, on any device |
 | `dayMode` | `"none"` | `"day"` (always light), `"night"` (always dark), `"auto"` (light from sunrise to sunset), or `"none"` (light only if a theme sets `body.mm-day`) |
 | `dayModeScope` | `"calendar"` | `"calendar"` lightens this window only; `"page"` sets `body.mm-day` for the whole page |
-| `latitude` / `longitude` | `null` | Location for `dayMode: "auto"` sunrise and sunset |
+| `sunNotification` | `"AMBIENT_WEATHER_DATA"` | Notification that carries `sunrise` / `sunset` (MMM-GlassTempest's weather broadcast) for `dayMode: "auto"` |
+| `latitude` / `longitude` | `null` | Fallback location for `dayMode: "auto"` when no sun times have been broadcast |
 | `dayStart` / `dayEnd` | `"07:00"` / `"19:00"` | Light hours for `dayMode: "auto"` when no location is set |
 
 ## Notes

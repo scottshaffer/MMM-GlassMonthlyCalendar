@@ -112,13 +112,13 @@ const ymd = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 
 test("currentMonth grid starts on the configured weekday and covers the month", () => {
   const { m } = setup();
-  let r = m._range(new Date());
+  let r = m._range(new Date(NOW));
   assert.equal(r.kind, "month");
   assert.equal(ymd(r.start), "2026-11-1"); // 1 Nov 2026 is a Sunday
   assert.equal(r.weeks, 5);
 
   m.config.firstDayOfWeek = "monday";
-  r = m._range(new Date());
+  r = m._range(new Date(NOW));
   assert.equal(ymd(r.start), "2026-10-26");
   assert.equal(r.weeks, 6); // Monday 30 Nov needs a sixth row
 });
@@ -133,13 +133,13 @@ test("lastMonth / nextMonth do not overflow on the 31st", () => {
 
 test("week modes and firstDayOfWeek: today", () => {
   const { m } = setup({ mode: "twoWeeks" });
-  let r = m._range(new Date());
+  let r = m._range(new Date(NOW));
   assert.equal(r.kind, "weeks");
   assert.equal(r.weeks, 2);
   assert.equal(ymd(r.start), "2026-11-22");
   m.config.firstDayOfWeek = "today";
   m.config.mode = "fourWeeks";
-  r = m._range(new Date());
+  r = m._range(new Date(NOW));
   assert.equal(ymd(r.start), "2026-11-23");
   assert.equal(r.weeks, 4);
 });
@@ -147,13 +147,13 @@ test("week modes and firstDayOfWeek: today", () => {
 test("navigation moves by months (month modes) and by the view length (week modes)", () => {
   const { m, timers } = setup({ mode: "threeWeeks", navigationResetSeconds: 30 });
   m._navigate(1);
-  assert.equal(ymd(m._range(new Date()).start), "2026-12-13");
+  assert.equal(ymd(m._range(new Date(NOW)).start), "2026-12-13");
   assert.equal(timers.at(-1).ms, 30000); // auto-return scheduled
   m._navigate(0);
   assert.equal(m.navOffset, 0);
   m.config.mode = "currentMonth";
   m._navigate(-1);
-  assert.equal(m._range(new Date()).month.getMonth(), 9);
+  assert.equal(m._range(new Date(NOW)).month.getMonth(), 9);
 });
 
 test("all-day events end on their last included day; multi-day detection", () => {
@@ -355,4 +355,27 @@ test("dayMode auto with coordinates schedules a check and toggles the live windo
   const before = win.classList.contains("gmc-light");
   tick.fn();
   assert.notEqual(win.classList.contains("gmc-light"), before);
+});
+
+test("dayMode auto uses sunrise/sunset broadcast by MMM-GlassTempest", () => {
+  const { m } = setup({ dayMode: "auto" }); // 20:46, no location: night
+  const win = m.getDom();
+  assert.equal(m.isDay, false);
+  // Broadcast with sunset at 21:30 local: now (20:46) is daytime
+  m.notificationReceived("AMBIENT_WEATHER_DATA", {
+    temperature: 47,
+    sunrise: new Date(2026, 10, 23, 6, 51).toISOString(),
+    sunset: new Date(2026, 10, 23, 21, 30).toISOString()
+  });
+  assert.equal(m.isDay, true);
+  assert.ok(win.classList.contains("gmc-light"));
+  // Yesterday's times still work (moved to today); a week-old payload is ignored
+  m.weatherSun = { rise: new Date(2026, 10, 22, 6, 50), set: new Date(2026, 10, 22, 16, 24) };
+  assert.equal(m._computeIsDay(new Date(2026, 10, 23, 12)), true);
+  assert.equal(m._computeIsDay(new Date(2026, 10, 23, 17)), false);
+  m.weatherSun = { rise: new Date(2026, 10, 10, 6, 40), set: new Date(2026, 10, 10, 23, 0) };
+  assert.equal(m._computeIsDay(new Date(2026, 10, 23, 22)), false); // falls back to 07:00-19:00
+  // Payload without sun times is ignored
+  m.notificationReceived("AMBIENT_WEATHER_DATA", { temperature: 50 });
+  assert.equal(m.weatherSun.rise.getDate(), 10);
 });

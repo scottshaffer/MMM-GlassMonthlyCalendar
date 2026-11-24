@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1]
+
+- `dayMode: "auto"` takes today's sunrise and sunset from MMM-GlassTempest's weather broadcast
+  (`sunNotification`, default `AMBIENT_WEATHER_DATA`), so no location is needed.
+  `latitude`/`longitude` and `dayStart`/`dayEnd` remain as fallbacks.
+
 ## [0.2.0]
 
 - `dayMode` option: `"day"`, `"night"`, or `"auto"` (light from sunrise to sunset at `latitude` /

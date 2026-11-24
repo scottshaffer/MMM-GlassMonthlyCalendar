@@ -1,0 +1,18 @@
+{
+  "name": "mmm-glassmonthlycalendar",
+  "version": "0.1.0",
+  "description": "MagicMirror month calendar drawn as a large liquid-glass main window; feature-compatible with MMM-MonthlyCalendar and styled to pair with MMM-GlassClock and MMM-GlassTempest.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scottshaffer/MMM-GlassMonthlyCalendar.git"
+  },
+  "license": "MIT",
+  "keywords": ["MagicMirror", "calendar", "monthly calendar", "glass", "liquid glass"],
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

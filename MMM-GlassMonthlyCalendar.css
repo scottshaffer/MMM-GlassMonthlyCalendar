@@ -1,0 +1,527 @@
+/* MMM-GlassMonthlyCalendar.css
+ * The calendar is the "main window" of the Glass family. It uses the same glass recipe, palette
+ * and theme variables as MMM-GlassClock and MMM-GlassTempest, but reads as a different, larger
+ * object: a thicker and deeper pane, a luminous gradient rim, a frosted title bar, a calm
+ * (non-sweeping) highlight and blooms on both corners. The cards float; the window anchors.
+ *
+ * Every selector is prefixed gmc- and scoped to .gmc-window, so it never collides with the
+ * unscoped .glass-card / .loading / .main-content rules that MMM-GlassTempest ships.
+ * Colors follow --mm-text, --mm-text-2, --mm-accent-2 and body.mm-day like the other modules.
+ */
+
+.gmc-window {
+  --gmc-accent: var(--mm-accent-2, #7dd3fc);
+  --gmc-text: var(--mm-text, #e9edf5);
+  --gmc-text-2: var(--mm-text-2, rgba(233, 237, 245, 0.72));
+  --gmc-line: rgba(255, 255, 255, 0.075);
+  --gmc-label-height: 34px;
+  --gmc-radius: 34px;
+
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  border-radius: var(--gmc-radius);
+  border: 1.5px solid transparent;
+  color: var(--gmc-text);
+  font-family: "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", -apple-system, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  text-align: left;
+  line-height: 1.25;
+  /* Fill (padding-box) + luminous rim (border-box). Deeper indigo base than the cards so the
+     window reads as the thicker, heavier piece of glass. */
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 40%, rgba(10, 18, 48, 0.22)) padding-box,
+    radial-gradient(90% 70% at 0% 0%, rgba(134, 239, 255, 0.24), rgba(37, 99, 235, 0) 70%) padding-box,
+    radial-gradient(80% 80% at 100% 100%, rgba(165, 180, 252, 0.22), rgba(99, 102, 241, 0) 70%) padding-box,
+    linear-gradient(rgba(12, 20, 52, 0.30), rgba(12, 20, 52, 0.30)) padding-box,
+    linear-gradient(135deg, rgba(186, 240, 255, 0.75), rgba(255, 255, 255, 0.10) 30%, rgba(255, 255, 255, 0.06) 62%, rgba(165, 180, 252, 0.65)) border-box;
+  box-shadow:
+    0 40px 90px rgba(0, 8, 36, 0.55),
+    0 12px 28px rgba(0, 8, 36, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 -30px 60px rgba(14, 165, 233, 0.06);
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.gmc-window > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Specular band across the top: a slow "breath" rather than the cards' sweeping shimmer. */
+.gmc-window::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0));
+  border-radius: var(--gmc-radius) var(--gmc-radius) 0 0;
+  pointer-events: none;
+  animation: gmc-breathe 14s ease-in-out infinite;
+}
+
+/* Twin blooms: top-right and bottom-left, so the window frames whatever cards sit beside it. */
+.gmc-window::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: -160px;
+  background:
+    radial-gradient(260px 260px at calc(100% - 230px) 210px, rgba(125, 211, 252, 0.42), rgba(14, 165, 233, 0) 70%),
+    radial-gradient(300px 300px at 240px calc(100% - 200px), rgba(129, 140, 248, 0.38), rgba(59, 130, 246, 0) 70%);
+  filter: blur(30px);
+  pointer-events: none;
+  animation: gmc-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes gmc-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes gmc-drift {
+  0% { transform: translate3d(0, 0, 0); opacity: 0.9; }
+  100% { transform: translate3d(-18px, 10px, 0); opacity: 0.65; }
+}
+
+/* === Title bar === */
+.gmc-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 26px 16px 30px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.gmc-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.gmc-heading-main {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
+}
+
+.gmc-heading-sub {
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--gmc-accent);
+  letter-spacing: 0.01em;
+}
+
+.gmc-titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+}
+
+.gmc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 16px;
+  font-size: 14px;
+  color: var(--gmc-text-2);
+}
+
+.gmc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+/* Calendar color dot (legend and timed events) */
+.gmc-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gmc-ev, var(--gmc-accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gmc-ev, var(--gmc-accent)) 25%, transparent),
+    0 0 8px color-mix(in srgb, var(--gmc-ev, var(--gmc-accent)) 60%, transparent);
+}
+
+/* Touch navigation: small glass pills, sized for a finger on a 15" panel */
+.gmc-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gmc-nav-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(0, 12, 48, 0.25);
+  color: var(--gmc-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background 0.2s ease;
+}
+
+.gmc-nav-btn:active {
+  transform: scale(0.94);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08));
+}
+
+.gmc-nav-today.gmc-nav-current {
+  color: var(--gmc-accent);
+}
+
+/* === Sheet (the grid area): a slightly darker inner pane for legibility === */
+.gmc-sheet {
+  margin: 14px 16px 16px;
+  border-radius: 22px;
+  background: rgba(4, 10, 30, 0.16);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.gmc-weekdays,
+.gmc-week {
+  display: grid;
+  grid-template-columns: var(--gmc-columns);
+}
+
+.gmc-weekdays {
+  padding: 12px 0 10px;
+  border-bottom: 1px solid var(--gmc-line);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gmc-weekday,
+.gmc-weeknum-head {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--gmc-text-2);
+}
+
+.gmc-weekday.gmc-weekend {
+  color: color-mix(in srgb, var(--gmc-accent) 80%, var(--gmc-text-2));
+}
+
+.gmc-week {
+  min-height: var(--gmc-row-height);
+  border-bottom: 1px solid var(--gmc-line);
+  row-gap: 3px;
+}
+
+.gmc-week.gmc-week-last {
+  border-bottom: 0;
+}
+
+.gmc-weeknum {
+  grid-column: 1;
+  padding-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--gmc-text-2);
+  opacity: 0.7;
+  border-right: 1px solid var(--gmc-line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Day cells span every row of the week, so they paint the full-height column behind events. */
+.gmc-day {
+  position: relative;
+  z-index: 0;
+  min-width: 0;
+  border-right: 1px solid var(--gmc-line);
+}
+
+.gmc-day.gmc-day-last {
+  border-right: 0;
+}
+
+.gmc-day.gmc-weekend {
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.gmc-date {
+  height: var(--gmc-label-height);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.gmc-date-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 13px;
+  font-size: 16px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.gmc-past .gmc-date-num {
+  opacity: 0.55;
+}
+
+.gmc-day.gmc-other-month {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.gmc-other-month .gmc-date-num {
+  opacity: 0.32;
+}
+
+/* Today: a raised bubble of glass with an accent rim, like the clock's date tile */
+.gmc-day.gmc-today {
+  z-index: 0;
+  background:
+    linear-gradient(170deg, rgba(186, 240, 255, 0.18), rgba(125, 211, 252, 0.05) 55%, rgba(129, 140, 248, 0.08));
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--gmc-accent) 70%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -18px 30px rgba(14, 165, 233, 0.10),
+    0 0 26px color-mix(in srgb, var(--gmc-accent) 22%, transparent);
+  border-radius: 14px;
+}
+
+.gmc-today .gmc-date-num {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gmc-accent) 95%, white), color-mix(in srgb, var(--gmc-accent) 70%, #6366f1));
+  color: #06142b;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--gmc-accent) 65%, transparent);
+  text-shadow: none;
+}
+
+/* === Events === */
+.gmc-event {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 5px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.3;
+  overflow: hidden;
+}
+
+.gmc-nowrap {
+  white-space: nowrap;
+}
+
+.gmc-nowrap .gmc-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.gmc-wrap .gmc-event {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  white-space: normal;
+}
+
+.gmc-event-time {
+  flex: 0 0 auto;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--gmc-text-2);
+}
+
+.gmc-event-title {
+  font-weight: 550;
+}
+
+.gmc-event-symbol {
+  flex: 0 0 auto;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.gmc-wrap .gmc-dot {
+  margin-top: 0.35em;
+}
+
+/* Glass style: bars are tinted glass in the calendar's color */
+.gmc-glass-events .gmc-event-bar {
+  --gmc-ev-c: var(--gmc-ev, var(--gmc-accent));
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--gmc-ev-c) 42%, transparent),
+    color-mix(in srgb, var(--gmc-ev-c) 26%, transparent));
+  border: 1px solid color-mix(in srgb, var(--gmc-ev-c) 55%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  color: var(--gmc-text);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.gmc-glass-events .gmc-event-bar .gmc-event-time {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* Glass style: timed events are a color dot, the time and the title on the bare glass */
+.gmc-glass-events .gmc-event-timed {
+  padding-left: 6px;
+}
+
+/* A bar that continues from the previous / into the next week keeps a square, open edge */
+.gmc-event-bar.gmc-continues-left {
+  margin-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-width: 0;
+}
+
+.gmc-event-bar.gmc-continues-right {
+  margin-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 0;
+}
+
+.gmc-event-past {
+  opacity: 0.5;
+}
+
+/* Solid style: the original MMM-MonthlyCalendar look (color set inline by the module) */
+.gmc-solid-events .gmc-event-bar {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.gmc-solid-events .gmc-light-bg,
+.gmc-solid-events .gmc-light-bg .gmc-event-time {
+  color: #000;
+}
+
+.gmc-solid-events .gmc-dark-bg,
+.gmc-solid-events .gmc-dark-bg .gmc-event-time {
+  color: #fff;
+}
+
+.gmc-solid-events .gmc-event-timed .gmc-event-time {
+  color: inherit;
+}
+
+.gmc-more {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  margin: 0 5px;
+  padding: 1px 8px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--gmc-accent);
+}
+
+.gmc-waiting {
+  padding: 0 30px 20px;
+  font-size: 14px;
+  color: var(--gmc-text-2);
+}
+
+/* === Day mode (theme sets body.mm-day) === */
+body.mm-day .gmc-window {
+  --gmc-accent: var(--mm-accent-2, #0369a1);
+  --gmc-text: var(--mm-text, #1d2738);
+  --gmc-text-2: var(--mm-text-2, #5a6679);
+  --gmc-line: rgba(29, 39, 56, 0.09);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.45)) padding-box,
+    radial-gradient(90% 70% at 0% 0%, rgba(125, 211, 252, 0.28), rgba(37, 99, 235, 0) 70%) padding-box,
+    radial-gradient(80% 80% at 100% 100%, rgba(165, 180, 252, 0.26), rgba(99, 102, 241, 0) 70%) padding-box,
+    linear-gradient(135deg, rgba(56, 189, 248, 0.6), rgba(255, 255, 255, 0.5) 35%, rgba(255, 255, 255, 0.4) 65%, rgba(129, 140, 248, 0.55)) border-box;
+  box-shadow:
+    0 30px 70px rgba(40, 56, 84, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+body.mm-day .gmc-titlebar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.25));
+  border-bottom-color: rgba(29, 39, 56, 0.1);
+  box-shadow: none;
+}
+
+body.mm-day .gmc-heading-main,
+body.mm-day .gmc-glass-events .gmc-event-bar {
+  text-shadow: none;
+}
+
+body.mm-day .gmc-glass-events .gmc-event-bar {
+  --gmc-ev-c: var(--gmc-ev, var(--gmc-accent));
+  background: color-mix(in srgb, var(--gmc-ev-c) 30%, rgba(255, 255, 255, 0.5));
+}
+
+body.mm-day .gmc-today .gmc-date-num {
+  color: #fff;
+}
+
+body.mm-day .gmc-sheet {
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(29, 39, 56, 0.06);
+}
+
+body.mm-day .gmc-day.gmc-other-month {
+  background: rgba(29, 39, 56, 0.05);
+}
+
+body.mm-day .gmc-day.gmc-today {
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.9), rgba(224, 242, 254, 0.7));
+}
+
+body.mm-day .gmc-nav-btn {
+  border-color: rgba(29, 39, 56, 0.12);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.45));
+  box-shadow: 0 4px 12px rgba(40, 56, 84, 0.14);
+}
+
+/* === Reduced motion / Pi profile: static glass, no compositor animation === */
+.gmc-window.gmc-reduced::before,
+.gmc-window.gmc-reduced::after {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gmc-window::before,
+  .gmc-window::after {
+    animation: none;
+  }
+}

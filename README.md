@@ -1,5 +1,7 @@
 # MMM-GlassMonthlyCalendar
 
+THIS MODULE IS IN ACTIVE DEVELOPMENT - THE README IS NOT RIGHT!
+
 A month calendar for MagicMirror², drawn as a large liquid-glass **main window**. It is part of the
 same family as [MMM-GlassClock](https://github.com/scottshaffer/MMM-GlassClock) and
 [MMM-GlassTempest](https://github.com/scottshaffer/MMM-GlassTempest), but it is meant to be the
@@ -239,6 +241,7 @@ npm test
 
 ## Credits
 
+- This module was mostly written by Claude Opus 
 - Calendar logic and options from [MMM-MonthlyCalendar](https://github.com/kolbyjack/MMM-MonthlyCalendar)
   by Jonathan Kolb (MIT).
 - Liquid-glass recipe from [MMM-AmbientWeather](https://github.com/hearter20176/MMM-AmbientWeather)

@@ -34,8 +34,12 @@ It uses the same colors, font and theme variables (`--mm-text`, `--mm-text-2`, `
   with duplicates removed
 - All-day and multi-day events as glass bars in the calendar's color. A bar that runs into the next
   week has an open, square edge
-- Timed events show a color dot, the start time and the title. Timed multi-day events end with
-  "until 5pm", as in the original
+- Timed events are cards in the calendar's color, like a Skylight display: the title (wrapping to
+  two lines when it is long), the time range ("9:45 – 11am") and the location. A card that is
+  happening now gets a brighter rim. `eventLayout: "compact"` keeps the original one-line entries
+  ("9am Pickleball"), and timed multi-day events end with "until 5pm" as in the original
+- The window fills the screen's height and the width beside the Glass cards, and each day shows as
+  many cards as fit, then "+N more"
 - Today is a raised glass tile. Past days are dimmed and days from other months are shaded
 - Week numbers, Font Awesome calendar symbols, wrapped or truncated titles, hidden calendars
 - Extras: calendar legend, touch arrows with auto-return, `maxEventLanes` with "+N more", weekend
@@ -89,13 +93,31 @@ legend, and its `name` is the name shown in the legend.
 
 ### Layout on a 1920×1080 screen
 
-The default `width` is `calc(100vw - 540px)`. That fills the screen next to the 380 px Glass cards in
-`top_right` (with MagicMirror's default 60 px margins), up to `maxWidth` (1480 px). If you put the
-calendar in a full-width region such as `bottom_bar`, use `width: "100%"`.
+With the defaults (`height: "fill"`, `width: "fill"`) the window runs from the top of the screen to
+the bottom margin and takes all the width except `reserveWidth` (380 px, the width of the Glass
+cards) plus `reserveGap` (30 px). It works out the space from the browser window and MagicMirror's
+page margins, and redraws if the screen size changes. Put the calendar in `top_right` and the cards
+in `top_left`, or the other way round.
 
-A six-week month needs about 930 px of height at the default `rowHeight` of 128. To stop busy weeks
-from making the window taller, set `maxEventLanes`. With `maxEventLanes: 4`, any events beyond four
-rows in a week collapse into "+N more".
+The week rows share the height evenly, and each day shows as many event cards as fit, then
+"+N more". For more room per day:
+
+- `mode: "twoWeeks"` (or `"threeWeeks"`) gives each week more height.
+- MagicMirror's page margin is 60 px on every side. A smaller margin in `custom.css` gives the
+  calendar more room:
+
+  ```css
+  body {
+    margin: 24px;
+    height: calc(100% - 48px);
+    width: calc(100% - 48px);
+  }
+  ```
+
+- `showLocation: false` makes cards one line shorter; `titleLines: 1` keeps titles to one line.
+
+`height: "auto"` and a CSS `width` (for example `"100%"` in a bar region) go back to sizing by
+`rowHeight`.
 
 ### Day mode (the light calendar)
 
@@ -147,6 +169,14 @@ Every option at its default:
     hideDuplicateEvents: true,
 
     // Main window
+    eventLayout: "cards",          // "cards" | "compact"
+    showEndTime: true,
+    showLocation: true,
+    titleLines: 2,
+    height: "fill",                // "fill" | "auto" | px
+    width: "fill",                 // "fill" | any CSS width
+    reserveWidth: 380,
+    reserveGap: 30,
     showHeader: true,
     showLegend: true,
     weekdayFormat: "short",        // "long" | "short" | "narrow"
@@ -154,9 +184,8 @@ Every option at its default:
     dimPastEvents: true,
     eventStyle: "glass",           // "glass" | "solid"
     rowHeight: 128,
-    maxEventLanes: 0,              // 0 = no limit
-    width: "calc(100vw - 540px)",
-    maxWidth: 1480,
+    maxEventLanes: 0,              // 0 = as many as fit
+    maxWidth: 0,
 
     // Touch
     touchNavigation: true,
@@ -208,9 +237,16 @@ Options added by this module:
 | `highlightWeekends` | `true` | Light tint on Saturday and Sunday |
 | `dimPastEvents` | `true` | Fade events that have already ended |
 | `eventStyle` | `"glass"` | `"glass"` (tinted glass bars and color dots) or `"solid"` (the original look) |
-| `rowHeight` | `128` | Minimum height of each week row, px |
-| `maxEventLanes` | `0` | Event rows per week before "+N more"; `0` = no limit |
-| `width` / `maxWidth` | `"calc(100vw - 540px)"` / `1480` | Window width (any CSS value) and its cap in px (`0` = no cap) |
+| `eventLayout` | `"cards"` | `"cards"`: timed events as cards with title, time range and location. `"compact"`: one line per event, as in MMM-MonthlyCalendar |
+| `showEndTime` | `true` | Cards show "9:45 – 11am" instead of "9:45am" |
+| `showLocation` | `true` | Cards show the event's location (its first line) |
+| `titleLines` | `2` | Long card titles wrap to this many lines (1 or 2) |
+| `height` | `"fill"` | `"fill"`: the full screen height. `"auto"`: `rowHeight` per week. Or a height in px |
+| `width` | `"fill"` | `"fill"`: the screen width minus `reserveWidth` + `reserveGap`. Or any CSS width, e.g. `"1400px"` or `"100%"` |
+| `reserveWidth` / `reserveGap` | `380` / `30` | Space `width: "fill"` leaves for the Glass cards beside the calendar, px |
+| `maxWidth` | `0` | Cap on the window width, px (`0` = no cap) |
+| `rowHeight` | `128` | With `height: "auto"`: minimum height of each week row, px |
+| `maxEventLanes` | `0` | Rows of all-day / multi-day bars per week (compact: rows of events) before "+N more"; `0` = as many as fit |
 | `touchNavigation` | `true` | ‹ Today › buttons in the title bar. They move by a month, or by the view length in week modes |
 | `navigationResetSeconds` | `120` | Go back to the current month after this many seconds; `0` = stay |
 | `updateDelay` | `5` | Seconds to wait for all calendars to report before redrawing (fixed at 5 in the original) |

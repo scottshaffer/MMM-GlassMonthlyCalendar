@@ -35,6 +35,9 @@ class FakeElement {
     this.children.push(c);
     return c;
   }
+  removeChild(c) {
+    this.children = this.children.filter((x) => x !== c);
+  }
   setAttribute(k, v) {
     this.attrs[k] = v;
   }
@@ -240,7 +243,7 @@ test("luminance of hex and rgb colors", () => {
 });
 
 test("getDom: title, today, other-month, events, labels and until-time", () => {
-  const { m, timers } = setup({ displaySymbol: true });
+  const { m, timers } = setup({ displaySymbol: true, eventLayout: "compact" });
   feed(m, timers, [
     ev("Thanksgiving", ms(2026, 10, 26), ms(2026, 10, 27), { fullDayEvent: true, color: "#34d399", calendarName: "Holidays" }),
     ev("Pickleball", ms(2026, 10, 23, 9), ms(2026, 10, 23, 10, 30), { color: "#60a5fa", calendarName: "Family", symbol: ["calendar"] }),
@@ -275,7 +278,7 @@ test("getDom: title, today, other-month, events, labels and until-time", () => {
 });
 
 test("maxEventLanes collapses the rest into +N more", () => {
-  const { m, timers } = setup({ maxEventLanes: 1 });
+  const { m, timers } = setup({ maxEventLanes: 1, eventLayout: "compact" });
   feed(m, timers, [
     ev("One", ms(2026, 10, 24, 9), ms(2026, 10, 24, 10)),
     ev("Two", ms(2026, 10, 24, 11), ms(2026, 10, 24, 12)),
@@ -289,7 +292,7 @@ test("maxEventLanes collapses the rest into +N more", () => {
 });
 
 test("solid style keeps the original color behaviour", () => {
-  const { m, timers } = setup({ eventStyle: "solid" });
+  const { m, timers } = setup({ eventStyle: "solid", eventLayout: "compact" });
   feed(m, timers, [
     ev("Light", ms(2026, 10, 26), ms(2026, 10, 27), { fullDayEvent: true, color: "#ffeb3b" }),
     ev("Dark", ms(2026, 10, 27), ms(2026, 10, 28), { fullDayEvent: true, color: "#1e3a8a" }),
@@ -378,4 +381,77 @@ test("dayMode auto uses sunrise/sunset broadcast by MMM-GlassTempest", () => {
   // Payload without sun times is ignored
   m.notificationReceived("AMBIENT_WEATHER_DATA", { temperature: 50 });
   assert.equal(m.weatherSun.rise.getDate(), 10);
+});
+
+test("cards: timed events show title, time range and location; bars stay bars", () => {
+  const { m, timers } = setup();
+  feed(m, timers, [
+    ev("Thanksgiving", ms(2026, 10, 26), ms(2026, 10, 27), { fullDayEvent: true, color: "#34d399" }),
+    ev("Coffee with Diane", ms(2026, 10, 25, 9, 45), ms(2026, 10, 25, 11), { color: "#f472b6", location: "Starbucks, 123 Main St\nHouston TX" }),
+    ev("Lunch", ms(2026, 10, 25, 11, 30), ms(2026, 10, 25, 13, 15)),
+    ev("Road trip", ms(2026, 10, 28, 8), ms(2026, 11, 1, 17))
+  ]);
+  const dom = m.getDom();
+  assert.ok(dom.classList.contains("gmc-layout-cards"));
+  const cards = dom.findAll("gmc-card");
+  assert.equal(cards.length, 2);
+  assert.equal(cards[0].findAll("gmc-card-title-text")[0].textContent, "Coffee with Diane");
+  assert.equal(cards[0].findAll("gmc-card-time")[0].text(), "9:45 – 11am");
+  assert.equal(cards[0].findAll("gmc-card-location")[0].text(), "Starbucks, 123 Main St");
+  assert.equal(cards[1].findAll("gmc-card-time")[0].text(), "11:30am – 1:15pm");
+  assert.equal(cards[1].findAll("gmc-card-location").length, 0);
+  // all-day and multi-day events are still bars
+  const bars = dom.findAll("gmc-event-bar").map((b) => b.text());
+  assert.ok(bars.some((t) => t.includes("Thanksgiving")));
+  assert.equal(bars.filter((t) => t.includes("Road trip")).length, 2);
+});
+
+test("cards: showEndTime / showLocation off, 24-hour ranges", () => {
+  const { m, timers } = setup({ showEndTime: false, showLocation: false });
+  feed(m, timers, [ev("Golf", ms(2026, 10, 25, 10, 30), ms(2026, 10, 25, 11, 45), { location: "Club" })]);
+  const card = m.getDom().findAll("gmc-card")[0];
+  assert.equal(card.findAll("gmc-card-line").length, 1);
+  assert.equal(card.findAll("gmc-card-time")[0].text(), "10:30am");
+  m.config.timeFormat = 24;
+  assert.equal(m._formatRange(new Date(2026, 0, 1, 13), new Date(2026, 0, 1, 14, 30)), "13:00 – 14:30");
+});
+
+test("fill: rows share the screen height and extra cards become +N more", () => {
+  const { m, timers } = setup({ mode: "fourWeeks" });
+  // 1920x1080 screen with MagicMirror's 60 px body margins
+  m._viewport = () => ({ width: 1800, height: 960 });
+  const day = (h, i) => ev(`Event ${i}`, ms(2026, 10, 25, h), ms(2026, 10, 25, h, 30));
+  feed(m, timers, [8, 9, 10, 11, 12, 13, 14].map(day));
+  const dom = m.getDom();
+  assert.equal(dom.style.width, "1390px"); // 1800 - 380 - 30
+  const rows = dom.findAll("gmc-week");
+  const rowPx = parseInt(rows[0].style.height, 10);
+  // 960 - (78 + 26 + 40 + 3) = 813, / 4 weeks
+  assert.equal(rowPx, 203);
+  const shown = dom.findAll("gmc-card").length;
+  const more = dom.findAll("gmc-more");
+  assert.equal(more.length, 1);
+  assert.equal(more[0].textContent, `+${7 - shown} more`);
+  // everything shown fits in the row
+  const M = m.METRICS;
+  const used = shown * (m._cardHeight(1, 1) + M.cardGap) + M.more;
+  assert.ok(used <= rowPx - M.label - M.rowPad - M.rowBorder, `${used} > room`);
+  assert.ok(shown >= 3);
+});
+
+test("fill: long titles get two lines when the column is narrow", () => {
+  const { m } = setup();
+  const ctx = { colWidth: 170 };
+  assert.equal(m._titleLines("Golf", ctx), 1);
+  assert.equal(m._titleLines("Cataract surgery follow-up appointment", ctx), 2);
+  m.config.titleLines = 1;
+  assert.equal(m._titleLines("Cataract surgery follow-up appointment", ctx), 1);
+});
+
+test("height auto and explicit widths keep the old sizing", () => {
+  const { m } = setup({ height: "auto", width: "100%" });
+  m._viewport = () => ({ width: 1800, height: 960 });
+  const dom = m.getDom();
+  assert.equal(dom.style.width, "100%");
+  assert.equal(dom.findAll("gmc-week")[0].style.height, undefined);
 });

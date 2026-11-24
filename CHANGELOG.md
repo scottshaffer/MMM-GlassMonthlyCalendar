@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0]
+
+- Event cards (new default `eventLayout: "cards"`): timed events show the title (two lines when
+  long), the time range and the location, tinted in the calendar's color; the event happening now
+  is highlighted. `eventLayout: "compact"` keeps the one-line entries.
+- `height: "fill"` and `width: "fill"` (new defaults): the window uses the full screen height and
+  the width beside the Glass cards (`reserveWidth`, `reserveGap`); each day shows as many cards as
+  fit, then "+N more". Redraws when the screen size changes.
+- New options `showEndTime`, `showLocation`, `titleLines`. `maxEventLanes` now defaults to "as many
+  as fit" and limits only the all-day bars in the cards layout.
+
 ## [0.2.1]
 
 - `dayMode: "auto"` takes today's sunrise and sunset from MMM-GlassTempest's weather broadcast

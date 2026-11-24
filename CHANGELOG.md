@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0]
+
+- `dayMode` option: `"day"`, `"night"`, or `"auto"` (light from sunrise to sunset at `latitude` /
+  `longitude`, or between `dayStart` and `dayEnd`). Light mode no longer needs a theme that sets
+  `body.mm-day`.
+- `dayModeScope`: `"calendar"` (default) lightens only this window; `"page"` sets `body.mm-day`.
+
 ## [0.1.0]
 
 - First release: month / multi-week calendar drawn as a liquid-glass "main window" in the

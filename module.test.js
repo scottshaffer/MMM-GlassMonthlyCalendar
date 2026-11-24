@@ -21,6 +21,7 @@ class FakeElement {
     this.style = style;
     this.classList = {
       add: (c) => this._classes.add(c),
+      remove: (c) => this._classes.delete(c),
       contains: (c) => this._classes.has(c)
     };
   }
@@ -81,7 +82,8 @@ function setup(overrides = {}, globalConfig = { language: "en-US", timeFormat: 1
     console,
     document: { createElement: (t) => new FakeElement(t) },
     setTimeout: (fn, ms) => (timers.push({ fn, ms }), timers.length),
-    clearTimeout() {}
+    clearTimeout() {},
+    setInterval: (fn, ms) => (timers.push({ fn, ms, interval: true }), timers.length)
   };
   vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(MODULE_PATH, "utf8"), sandbox, { filename: MODULE_PATH });
@@ -317,4 +319,40 @@ test("touch navigation buttons work", () => {
   btns[2].listeners.click({});
   assert.equal(m.navOffset, 1);
   assert.equal(m.getDom().findAll("gmc-heading-main")[0].textContent, "December");
+});
+
+test("sunrise and sunset (Chicago, 23 Nov 2026)", () => {
+  const { m } = setup();
+  const sun = m._sunTimes(new Date(2026, 10, 23, 12), 41.88, -87.63);
+  const near = (d, iso) => Math.abs(d - new Date(iso)) < 5 * 60000;
+  assert.ok(near(sun.rise, "2026-11-23T12:51:00Z"), sun.rise.toISOString());
+  assert.ok(near(sun.set, "2026-11-23T22:23:00Z"), sun.set.toISOString());
+});
+
+test("dayMode: day / night / none / auto with fixed hours", () => {
+  let { m } = setup({ dayMode: "day" });
+  assert.ok(m.getDom().classList.contains("gmc-light"));
+  ({ m } = setup({ dayMode: "night" }));
+  assert.ok(!m.getDom().classList.contains("gmc-light"));
+  ({ m } = setup());
+  assert.equal(m.isDay, null);
+  assert.ok(!m.getDom().classList.contains("gmc-light"));
+  // now is 20:46: night with the default 07:00-19:00, day with 07:00-21:00
+  ({ m } = setup({ dayMode: "auto" }));
+  assert.equal(m.isDay, false);
+  ({ m } = setup({ dayMode: "auto", dayEnd: "21:00" }));
+  assert.equal(m.isDay, true);
+  assert.equal(m._computeIsDay(new Date(2026, 10, 24, 6, 59)), false);
+  assert.equal(m._computeIsDay(new Date(2026, 10, 24, 7, 0)), true);
+});
+
+test("dayMode auto with coordinates schedules a check and toggles the live window", () => {
+  const { m, timers } = setup({ dayMode: "auto", latitude: 41.88, longitude: -87.63 });
+  const win = m.getDom();
+  const tick = timers.find((t) => t.interval);
+  assert.equal(tick.ms, 60000);
+  m._computeIsDay = () => !m.isDay; // pretend the sun just came up / went down
+  const before = win.classList.contains("gmc-light");
+  tick.fn();
+  assert.notEqual(win.classList.contains("gmc-light"), before);
 });

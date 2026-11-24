@@ -458,8 +458,10 @@
   color: var(--gmc-text-2);
 }
 
-/* === Day mode (theme sets body.mm-day) === */
-body.mm-day .gmc-window {
+/* === Day mode: body.mm-day (page-wide, from a theme or dayModeScope "page")
+   or .gmc-light on this window only (dayModeScope "calendar") === */
+body.mm-day .gmc-window,
+.gmc-window.gmc-light {
   --gmc-accent: var(--mm-accent-2, #0369a1);
   --gmc-text: var(--mm-text, #1d2738);
   --gmc-text-2: var(--mm-text-2, #5a6679);
@@ -474,40 +476,49 @@ body.mm-day .gmc-window {
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-body.mm-day .gmc-titlebar {
+body.mm-day .gmc-titlebar,
+.gmc-light .gmc-titlebar {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.25));
   border-bottom-color: rgba(29, 39, 56, 0.1);
   box-shadow: none;
 }
 
 body.mm-day .gmc-heading-main,
-body.mm-day .gmc-glass-events .gmc-event-bar {
+.gmc-light .gmc-heading-main,
+body.mm-day .gmc-glass-events .gmc-event-bar,
+.gmc-window.gmc-light.gmc-glass-events .gmc-event-bar {
   text-shadow: none;
 }
 
-body.mm-day .gmc-glass-events .gmc-event-bar {
+body.mm-day .gmc-glass-events .gmc-event-bar,
+.gmc-window.gmc-light.gmc-glass-events .gmc-event-bar {
   --gmc-ev-c: var(--gmc-ev, var(--gmc-accent));
   background: color-mix(in srgb, var(--gmc-ev-c) 30%, rgba(255, 255, 255, 0.5));
 }
 
-body.mm-day .gmc-today .gmc-date-num {
+body.mm-day .gmc-today .gmc-date-num,
+.gmc-light .gmc-today .gmc-date-num {
   color: #fff;
 }
 
-body.mm-day .gmc-sheet {
+body.mm-day .gmc-sheet,
+.gmc-light .gmc-sheet {
   background: rgba(255, 255, 255, 0.35);
   box-shadow: inset 0 0 0 1px rgba(29, 39, 56, 0.06);
 }
 
-body.mm-day .gmc-day.gmc-other-month {
+body.mm-day .gmc-day.gmc-other-month,
+.gmc-light .gmc-day.gmc-other-month {
   background: rgba(29, 39, 56, 0.05);
 }
 
-body.mm-day .gmc-day.gmc-today {
+body.mm-day .gmc-day.gmc-today,
+.gmc-light .gmc-day.gmc-today {
   background: linear-gradient(170deg, rgba(255, 255, 255, 0.9), rgba(224, 242, 254, 0.7));
 }
 
-body.mm-day .gmc-nav-btn {
+body.mm-day .gmc-nav-btn,
+.gmc-light .gmc-nav-btn {
   border-color: rgba(29, 39, 56, 0.12);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.45));
   box-shadow: 0 4px 12px rgba(40, 56, 84, 0.14);

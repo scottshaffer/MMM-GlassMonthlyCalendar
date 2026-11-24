@@ -40,10 +40,8 @@ It uses the same colors, font and theme variables (`--mm-text`, `--mm-text-2`, `
   tint, dimmed past events, redraw at midnight
 - `eventStyle: "solid"` gives you the original look: solid bars, black or white text chosen by
   `luminanceThreshold`, and colored text for timed events
-- Day mode, plus the Pi / reduced-motion profile used by the other Glass modules. No npm packages are
-  needed
-
-![Day mode](screenshots/preview-day.png)
+- Light "day mode", switched on all the time or at sunrise and sunset (see below), plus the Pi /
+  reduced-motion profile used by the other Glass modules. No npm packages are needed
 
 ## Installation
 
@@ -97,6 +95,32 @@ A six-week month needs about 930 px of height at the default `rowHeight` of 128.
 from making the window taller, set `maxEventLanes`. With `maxEventLanes: 4`, any events beyond four
 rows in a week collapse into "+N more".
 
+### Day mode (the light calendar)
+
+![Day mode](screenshots/preview-day.png)
+
+MagicMirror itself has no day/night theme, so the calendar can switch itself:
+
+```js
+config: {
+  dayMode: "auto",     // light from sunrise to sunset
+  latitude: 41.88,     // your location (decimal degrees; west is negative)
+  longitude: -87.63
+}
+```
+
+- `dayMode: "day"` keeps it light all the time; `"night"` keeps it dark.
+- With `"auto"` and no `latitude`/`longitude`, it is light from `dayStart` to `dayEnd`
+  (07:00–19:00 by default).
+- `dayModeScope: "calendar"` (the default) lightens only this window. The clock and weather cards
+  stay in their dark glass, which is readable in daylight.
+- `dayModeScope: "page"` instead puts `mm-day` on the whole page, for themes and modules that
+  restyle themselves from it. MMM-GlassClock and MMM-GlassTempest only have partial day-mode
+  styling today (they relied on a theme `custom.css` that isn't published), so leave this on
+  `"calendar"` unless those are updated.
+- `dayMode: "none"` (the default) leaves it to a theme: the calendar turns light only if something
+  else sets `body.mm-day`.
+
 ### Sample config entry
 
 Every option at its default:
@@ -139,7 +163,15 @@ Every option at its default:
     locale: null,                  // null = MagicMirror's language
     timeFormat: null,              // 12 | 24 | null (MagicMirror's timeFormat)
     performanceProfile: "auto",    // "auto" | "pi" | "full"
-    reduceMotion: false
+    reduceMotion: false,
+
+    // Day mode
+    dayMode: "none",               // "none" | "day" | "night" | "auto"
+    dayModeScope: "calendar",      // "calendar" | "page"
+    latitude: null,
+    longitude: null,
+    dayStart: "07:00",
+    dayEnd: "19:00"
   }
 },
 ```
@@ -181,6 +213,10 @@ Options added by this module:
 | `timeFormat` | `null` | `12` or `24`; `null` follows MagicMirror's `timeFormat` |
 | `performanceProfile` | `"auto"` | `"pi"` turns off the window's slow highlight and glow animation |
 | `reduceMotion` | `false` | Same as the Pi profile, on any device |
+| `dayMode` | `"none"` | `"day"` (always light), `"night"` (always dark), `"auto"` (light from sunrise to sunset), or `"none"` (light only if a theme sets `body.mm-day`) |
+| `dayModeScope` | `"calendar"` | `"calendar"` lightens this window only; `"page"` sets `body.mm-day` for the whole page |
+| `latitude` / `longitude` | `null` | Location for `dayMode: "auto"` sunrise and sunset |
+| `dayStart` / `dayEnd` | `"07:00"` / `"19:00"` | Light hours for `dayMode: "auto"` when no location is set |
 
 ## Notes
 

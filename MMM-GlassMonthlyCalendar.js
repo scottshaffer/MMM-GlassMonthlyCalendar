@@ -43,7 +43,15 @@ Module.register("MMM-GlassMonthlyCalendar", {
     locale: null, // null follows MagicMirror's language
     timeFormat: null, // 12 | 24; null follows MagicMirror's global timeFormat
     performanceProfile: "auto", // auto | pi | full (same meaning as the other Glass modules)
-    reduceMotion: false
+    reduceMotion: false,
+
+    // ---- Day mode (light glass) ----
+    dayMode: "none", // "none" (only follow a theme's body.mm-day) | "day" | "night" | "auto"
+    dayModeScope: "calendar", // "calendar" (this window only) | "page" (sets body.mm-day for every module)
+    latitude: null, // for dayMode "auto": light from sunrise to sunset at this location
+    longitude: null,
+    dayStart: "07:00", // for dayMode "auto" when latitude/longitude are not set
+    dayEnd: "19:00"
   },
 
   WEEKDAYS: ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
@@ -72,6 +80,17 @@ Module.register("MMM-GlassMonthlyCalendar", {
         window.matchMedia &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     this._scheduleMidnight();
+    this.isDay = this._computeIsDay(new Date());
+    this._applyDayMode();
+    if (String(this.config.dayMode).toLowerCase() === "auto") {
+      this.dayTimer = setInterval(() => {
+        const isDay = this._computeIsDay(new Date());
+        if (isDay !== this.isDay) {
+          this.isDay = isDay;
+          this._applyDayMode();
+        }
+      }, 60 * 1000);
+    }
   },
 
   suspend() {
@@ -199,6 +218,77 @@ Module.register("MMM-GlassMonthlyCalendar", {
       }, reset * 1000);
     }
     this._redraw(0);
+  },
+
+  /* ---------- day mode ---------- */
+
+  _dayScope() {
+    return String(this.config.dayMode).toLowerCase() === "none" ? null
+      : String(this.config.dayModeScope).toLowerCase() === "page" ? "page" : "calendar";
+  },
+
+  // true = light, false = dark, null = leave it to the theme (dayMode "none").
+  _computeIsDay(now) {
+    const mode = String(this.config.dayMode || "none").toLowerCase();
+    if (mode === "day") return true;
+    if (mode === "night") return false;
+    if (mode !== "auto") return null;
+    const lat = Number(this.config.latitude);
+    const lon = Number(this.config.longitude);
+    if (this.config.latitude != null && this.config.longitude != null && isFinite(lat) && isFinite(lon)) {
+      const sun = this._sunTimes(now, lat, lon);
+      if (sun.rise && sun.set) return now >= sun.rise && now < sun.set;
+      if (sun.polar) return sun.polar === "day";
+    }
+    const mins = (hhmm) => {
+      const m = String(hhmm || "").match(/^(\d{1,2}):(\d{2})$/);
+      return m ? +m[1] * 60 + +m[2] : null;
+    };
+    const start = mins(this.config.dayStart) ?? 420;
+    const end = mins(this.config.dayEnd) ?? 1140;
+    const t = now.getHours() * 60 + now.getMinutes();
+    return start <= end ? t >= start && t < end : t >= start || t < end;
+  },
+
+  _applyDayMode() {
+    const scope = this._dayScope();
+    if (!scope || this.isDay == null) return;
+    if (scope === "page") {
+      if (typeof document !== "undefined" && document.body && document.body.classList) {
+        if (this.isDay) document.body.classList.add("mm-day");
+        else document.body.classList.remove("mm-day");
+      }
+    } else if (this.windowEl && this.windowEl.classList) {
+      if (this.isDay) this.windowEl.classList.add("gmc-light");
+      else this.windowEl.classList.remove("gmc-light");
+    }
+  },
+
+  // Sunrise and sunset for the local date of "now" (standard NOAA/suncalc approximation, ±1-2 min).
+  _sunTimes(now, lat, lon) {
+    const rad = Math.PI / 180;
+    const J1970 = 2440588;
+    const J2000 = 2451545;
+    const J0 = 0.0009;
+    const noonLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    const d = noonLocal.valueOf() / 86400000 - 0.5 + J1970 - J2000;
+    const lw = rad * -lon;
+    const phi = rad * lat;
+    const n = Math.round(d - J0 - lw / (2 * Math.PI));
+    const ds = J0 + lw / (2 * Math.PI) + n;
+    const M = rad * (357.5291 + 0.98560028 * ds);
+    const C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+    const L = M + C + rad * 102.9372 + Math.PI;
+    const dec = Math.asin(Math.sin(rad * 23.4397) * Math.sin(L));
+    const jNoon = J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+    const cosH = (Math.sin(rad * -0.833) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec));
+    if (cosH < -1) return { polar: "day" };
+    if (cosH > 1) return { polar: "night" };
+    const w = Math.acos(cosH);
+    const jSet = J2000 + (J0 + (w + lw) / (2 * Math.PI) + n) + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+    const jRise = jNoon - (jSet - jNoon);
+    const fromJ = (j) => new Date((j + 0.5 - J1970) * 86400000);
+    return { rise: fromJ(jRise), set: fromJ(jSet) };
   },
 
   /* ---------- settings ---------- */
@@ -400,6 +490,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
     const visibleEvents = this.events;
 
     const win = this._el("div", "gmc-window");
+    this.windowEl = win;
+    if (this._dayScope() === "calendar" && this.isDay) win.classList.add("gmc-light");
     win.classList.add(glass ? "gmc-glass-events" : "gmc-solid-events");
     if (this.reduceMotion) win.classList.add("gmc-reduced");
     if (c.wrapTitles) win.classList.add("gmc-wrap");

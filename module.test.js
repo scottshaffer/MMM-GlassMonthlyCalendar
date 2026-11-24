@@ -455,3 +455,35 @@ test("height auto and explicit widths keep the old sizing", () => {
   assert.equal(dom.style.width, "100%");
   assert.equal(dom.findAll("gmc-week")[0].style.height, undefined);
 });
+
+test("calendars without their own color get different colors; set colors are kept", () => {
+  const { m, timers } = setup();
+  feed(m, timers, [
+    ev("A", ms(2026, 10, 25, 9), ms(2026, 10, 25, 10), { calendarName: "Scott", color: "#fff" }),
+    ev("B", ms(2026, 10, 25, 11), ms(2026, 10, 25, 12), { calendarName: "Family", color: "#ffffff" }),
+    ev("C", ms(2026, 10, 25, 13), ms(2026, 10, 25, 14), { calendarName: "Holidays" }),
+    ev("D", ms(2026, 10, 26, 9), ms(2026, 10, 26, 10), { calendarName: "Scott", color: "#fff" }),
+    ev("E", ms(2026, 10, 27, 9), ms(2026, 10, 27, 10), { calendarName: "Work", color: "#60a5fa" })
+  ]);
+  const col = (t) => m.events.find((e) => e.title === t).color;
+  assert.equal(col("A"), col("D")); // same calendar, same color
+  const auto = new Set([col("A"), col("B"), col("C")]);
+  assert.equal(auto.size, 3); // three calendars, three colors
+  assert.equal(col("E"), "#60a5fa"); // a color set in config.js is kept...
+  assert.ok(!auto.has("#60a5fa")); // ...and not reused for another calendar
+  // stable across updates: same assignment on the next broadcast
+  const before = col("B");
+  feed(m, timers, [ev("B", ms(2026, 10, 25, 11), ms(2026, 10, 25, 12), { calendarName: "Family", color: "#fff" }),
+    ev("A", ms(2026, 10, 25, 9), ms(2026, 10, 25, 10), { calendarName: "Scott", color: "#fff" }),
+    ev("C", ms(2026, 10, 25, 13), ms(2026, 10, 25, 14), { calendarName: "Holidays" }),
+    ev("E", ms(2026, 10, 27, 9), ms(2026, 10, 27, 10), { calendarName: "Work", color: "#60a5fa" })]);
+  assert.equal(col("B"), before);
+  // the legend lists each calendar with its color
+  assert.equal(m.getDom().findAll("gmc-legend-item").length, 4);
+});
+
+test("calendarColors off keeps the colors as sent", () => {
+  const { m, timers } = setup({ calendarColors: "off" });
+  feed(m, timers, [ev("A", ms(2026, 10, 25, 9), ms(2026, 10, 25, 10), { calendarName: "Scott", color: "#fff" })]);
+  assert.equal(m.events[0].color, "#fff");
+});

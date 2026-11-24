@@ -88,8 +88,25 @@ don't want its list on screen as well.
 { module: "MMM-GlassTempest", position: "top_right", config: { /* … */ } },
 ```
 
-The calendar module's `color` for each calendar becomes the tint of its events and its dot in the
-legend, and its `name` is the name shown in the legend.
+### Several calendars, one color each
+
+Give every calendar a `name` in the calendar module. The calendar tells calendars apart by name,
+shows each name in the legend, and tints each calendar's events in its own color:
+
+```js
+calendars: [
+  { name: "Scott",    url: "https://calendar.google.com/calendar/ical/…/basic.ics" },
+  { name: "Family",   url: "https://calendar.google.com/calendar/ical/…/basic.ics" },
+  { name: "Holidays", url: "https://calendar.google.com/calendar/ical/…/basic.ics" }
+]
+```
+
+- A calendar with its own `color` (e.g. `color: "#f472b6"`) keeps it.
+- A calendar without one (the calendar module then sends white) gets a different color from
+  `colorPalette`: blue, pink, green, amber, violet, red, cyan, orange. Colors are given out in name
+  order and skip colors you already set, so each calendar keeps the same color.
+- Calendars without a `name` can't be told apart and share one color.
+- `calendarColors: "off"` uses the colors exactly as the calendar module sends them.
 
 ### Layout on a 1920×1080 screen
 
@@ -168,6 +185,10 @@ Every option at its default:
     multiDayEndingTimeSeparator: " until ",
     hideDuplicateEvents: true,
 
+    // Colors per calendar
+    calendarColors: "auto",        // "auto" | "off"
+    colorPalette: ["#60a5fa", "#f472b6", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#22d3ee", "#fb923c"],
+
     // Main window
     eventLayout: "cards",          // "cards" | "compact"
     showEndTime: true,
@@ -226,6 +247,13 @@ Options from MMM-MonthlyCalendar:
 | `luminanceThreshold` | `110` | With `eventStyle: "solid"`, bars brighter than this get black text |
 | `multiDayEndingTimeSeparator` | `" until "` | Text before the end time on the last day of a timed multi-day event |
 | `hideDuplicateEvents` | `true` | Show events with the same title, start and end only once |
+
+Options added by this module (colors):
+
+| Option | Default | Description |
+| :-- | :-- | :-- |
+| `calendarColors` | `"auto"` | `"auto"`: each calendar without its own `color` gets a different color from `colorPalette`. `"off"`: colors exactly as sent (white when unset) |
+| `colorPalette` | 8 colors | Colors handed out to calendars, in order of calendar name |
 
 Options added by this module:
 

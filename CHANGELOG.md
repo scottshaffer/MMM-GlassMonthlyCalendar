@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0]
+
+- Each calendar gets its own color: calendars without a `color` in the calendar module (which then
+  sends white) get a distinct color from `colorPalette`, in name order, skipping colors already set.
+  `calendarColors: "off"` turns this off.
+
 ## [0.3.0]
 
 - Event cards (new default `eventLayout: "cards"`): timed events show the title (two lines when

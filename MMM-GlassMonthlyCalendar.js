@@ -20,6 +20,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
     luminanceThreshold: 110, // eventStyle "solid": above this, all-day text is drawn black
     multiDayEndingTimeSeparator: " until ",
     hideDuplicateEvents: true,
+    calendarColors: "auto", // "auto": calendars with no color of their own (MagicMirror sends white) get one from colorPalette; "off": use the colors as sent
+    colorPalette: ["#60a5fa", "#f472b6", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#22d3ee", "#fb923c"],
 
     // ---- Main-window look ----
     showHeader: true, // title bar with the month and year (or the date range in week modes)
@@ -179,11 +181,37 @@ Module.register("MMM-GlassMonthlyCalendar", {
     return out;
   },
 
+  // White (the calendar module's default when a calendar has no color) or no color at all.
+  _isUnsetColor(color) {
+    const c = String(color || "").replace(/\s+/g, "").toLowerCase();
+    return !c || c === "#fff" || c === "#ffffff" || c === "white" || c === "rgb(255,255,255)";
+  },
+
+  // Give every calendar without its own color a different color from the palette. Calendars are
+  // told apart by their name (the calendar module's "name" option) and get their color in name
+  // order, so a calendar keeps its color from one update to the next.
+  _assignCalendarColors(events) {
+    if (String(this.config.calendarColors).toLowerCase() === "off") return;
+    const palette = Array.isArray(this.config.colorPalette) && this.config.colorPalette.length
+      ? this.config.colorPalette : this.defaults.colorPalette;
+    const needs = (e) => e._gmcAutoColor || this._isUnsetColor(e.color);
+    const taken = new Set(events.filter((e) => !needs(e)).map((e) => String(e.color).toLowerCase()));
+    const free = palette.filter((c) => !taken.has(String(c).toLowerCase()));
+    const pool = free.length ? free : palette;
+    const names = [...new Set(events.filter(needs).map((e) => e.calendarName || ""))].sort();
+    const colorFor = new Map(names.map((n, i) => [n, pool[i % pool.length]]));
+    for (const e of events) {
+      if (!needs(e)) continue;
+      e.color = colorFor.get(e.calendarName || "");
+      e._gmcAutoColor = true;
+    }
+  },
+
   _mergeEvents(sources) {
-    let events = Object.values(sources)
-      .flat()
-      .sort((a, b) =>
-        a.startDate - b.startDate || a.endDate - b.endDate || a.title.localeCompare(b.title));
+    let events = Object.values(sources).flat();
+    this._assignCalendarColors(events);
+    events.sort((a, b) =>
+      a.startDate - b.startDate || a.endDate - b.endDate || a.title.localeCompare(b.title));
     if (this.config.hideDuplicateEvents) {
       const seen = new Set();
       events = events.filter((e) => {

@@ -11,7 +11,7 @@
 
 .gmc-window {
   --gmc-accent: var(--mm-accent-2, #7dd3fc);
-  --gmc-press: #7dd3fc; /* touch button press / flash color */
+  --gmc-press: #7dd3fc; /* touch button press color */
   --gmc-text: var(--mm-text, #e9edf5);
   --gmc-text-2: var(--mm-text-2, rgba(233, 237, 245, 0.72));
   --gmc-line: rgba(255, 255, 255, 0.075);
@@ -195,7 +195,7 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.08s ease;
 }
 
 /* Pressed: sinks and fills with the press color straight away */
@@ -206,22 +206,6 @@
   border-color: color-mix(in srgb, var(--gmc-press) 60%, white);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--gmc-press) 35%, transparent), 0 0 22px color-mix(in srgb, var(--gmc-press) 70%, transparent);
   color: #06142b;
-}
-
-/* After the calendar changes, the button that was pressed flashes once and a ring spreads out */
-.gmc-nav-btn.gmc-nav-flash {
-  animation: gmc-nav-flash 0.6s ease-out;
-}
-
-@keyframes gmc-nav-flash {
-  0% {
-    background: var(--gmc-press);
-    color: #06142b;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gmc-press) 80%, transparent), 0 0 24px var(--gmc-press);
-  }
-  100% {
-    box-shadow: 0 0 0 18px color-mix(in srgb, var(--gmc-press) 0%, transparent), 0 4px 14px rgba(0, 8, 30, 0.4);
-  }
 }
 
 .gmc-nav-today.gmc-nav-current:not(.gmc-pressed) {

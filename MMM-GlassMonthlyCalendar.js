@@ -668,36 +668,41 @@ Module.register("MMM-GlassMonthlyCalendar", {
     return [...seen.entries()];
   },
 
-  // Touch buttons. Pressing one darkens it at once; the calendar changes a moment later (so the
-  // press can be seen), and the same button in the redrawn title bar flashes to confirm it.
+  // Touch buttons. A touch lights the button once, and it stays lit until the action runs a moment
+  // later. Lifting the finger does not turn it off first (that read as a second flash on touch
+  // screens), and nothing flashes again after the calendar redraws.
   _button(parent, icon, label, action) {
     const b = this._el("button", "gmc-nav-btn", parent);
     b.type = "button";
     b.setAttribute("aria-label", label);
     if (icon) this._el("i", `fa fa-${icon}`, b);
     else b.textContent = label;
-    if (this.flashButton === label) {
-      b.classList.add("gmc-nav-flash");
-      this.flashButton = null;
-    }
-    const press = () => b.classList.add("gmc-pressed");
-    const release = () => b.classList.remove("gmc-pressed");
+    let releaseTimer = null;
+    const release = () => {
+      if (releaseTimer) clearTimeout(releaseTimer);
+      releaseTimer = null;
+      b.classList.remove("gmc-pressed");
+    };
+    const press = () => {
+      b.classList.add("gmc-pressed");
+      // If no tap follows (the finger slid away), go dark again.
+      if (releaseTimer) clearTimeout(releaseTimer);
+      releaseTimer = setTimeout(release, 700);
+    };
     b.addEventListener("pointerdown", press);
-    b.addEventListener("touchstart", press);
-    for (const t of ["pointerup", "pointercancel", "pointerleave", "touchcancel"]) b.addEventListener(t, release);
+    for (const t of ["pointercancel", "touchcancel"]) b.addEventListener(t, release);
     b.addEventListener("click", (ev) => {
       if (ev && ev.stopPropagation) ev.stopPropagation();
       const now = Date.now();
       if (this.lastPress && now - this.lastPress < 300) return; // ignore a double tap
       this.lastPress = now;
-      press();
-      this.flashButton = label;
+      b.classList.add("gmc-pressed");
       this._clear("pressTimer");
       this.pressTimer = setTimeout(() => {
         this.pressTimer = null;
         if (typeof action === "function") action();
         else this._navigate(action);
-      }, 140);
+      }, 120);
     });
     return b;
   },

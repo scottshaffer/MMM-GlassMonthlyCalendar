@@ -319,29 +319,39 @@ test("week mode title shows the date range; week numbers add a column", () => {
   assert.match(dom.style["--gmc-columns"], /^3\.2ch /);
 });
 
-test("touch buttons: press shows at once, then the view changes and the button flashes", () => {
+test("touch buttons: one press light that stays on until the view changes, no second flash", () => {
   const { m, timers } = setup();
-  const dom = m.getDom();
-  const btns = dom.findAll("gmc-nav")[0].findAll("gmc-nav-btn");
+  const btns = m.getDom().findAll("gmc-nav")[0].findAll("gmc-nav-btn");
   assert.equal(btns.length, 3);
-  btns[2].listeners.pointerdown({});
-  assert.ok(btns[2].classList.contains("gmc-pressed"));
-  btns[2].listeners.pointerup({});
-  assert.ok(!btns[2].classList.contains("gmc-pressed"));
-
-  btns[2].listeners.click({});
-  assert.ok(btns[2].classList.contains("gmc-pressed")); // visible before the redraw
+  const next = btns[2];
+  next.listeners.pointerdown({});
+  assert.ok(next.classList.contains("gmc-pressed"));
+  // lifting the finger does not switch it off (no pointerup / pointerleave handlers)
+  assert.equal(next.listeners.pointerup, undefined);
+  assert.equal(next.listeners.pointerleave, undefined);
+  next.listeners.click({});
+  assert.ok(next.classList.contains("gmc-pressed"));
   assert.equal(m.navOffset, 0);
-  const t = timers.at(-1);
-  assert.ok(t.ms > 0 && t.ms <= 200);
+  const t = timers.find((x) => x.ms === 120);
+  assert.ok(t);
   t.fn();
   assert.equal(m.navOffset, 1);
   const redrawn = m.getDom();
   assert.equal(redrawn.findAll("gmc-heading-main")[0].textContent, "December");
-  const next = redrawn.findAll("gmc-nav")[0].findAll("gmc-nav-btn")[2];
-  assert.ok(next.classList.contains("gmc-nav-flash"));
-  // only once
-  assert.ok(!m.getDom().findAll("gmc-nav")[0].findAll("gmc-nav-btn")[2].classList.contains("gmc-nav-flash"));
+  assert.equal(redrawn.findAll("gmc-nav-flash").length, 0); // nothing flashes after the redraw
+  assert.equal(redrawn.findAll("gmc-pressed").length, 0);
+});
+
+test("a touch that slides away without tapping goes dark again", () => {
+  const { m, timers } = setup();
+  const b = m.getDom().findAll("gmc-nav")[0].findAll("gmc-nav-btn")[0];
+  b.listeners.pointerdown({});
+  assert.ok(b.classList.contains("gmc-pressed"));
+  timers.find((x) => x.ms === 700).fn();
+  assert.ok(!b.classList.contains("gmc-pressed"));
+  b.listeners.pointerdown({});
+  b.listeners.pointercancel({});
+  assert.ok(!b.classList.contains("gmc-pressed"));
 });
 
 test("sunrise and sunset (Chicago, 23 Nov 2026)", () => {
@@ -591,8 +601,8 @@ test("eventPopup: false leaves events untappable", () => {
 const tap = (m, timers, el) => {
   m.lastPress = 0; // the test clock is frozen, so two taps would look like a double tap
   el.listeners.click({});
-  const t = timers.at(-1);
-  if (t && t.ms === 140) t.fn(); // buttons act after their press flash
+  const t2 = timers.slice().reverse().find((x) => x.ms === 120);
+  if (t2) t2.fn(); // buttons act a moment after the press lights up
 };
 
 test("calendar button toggles between 2 and 4 weeks", () => {
@@ -606,7 +616,6 @@ test("calendar button toggles between 2 and 4 weeks", () => {
   assert.equal(dom.findAll("gmc-week").length, 2);
   btn = dom.findAll("gmc-view-toggle");
   assert.equal(btn[0].attrs["aria-label"], "Show 4 Weeks");
-  assert.ok(btn[0].classList.contains("gmc-nav-flash")); // the press is confirmed after the change
   tap(m, timers, btn[0]);
   assert.equal(m.getDom().findAll("gmc-week").length, 4);
 });

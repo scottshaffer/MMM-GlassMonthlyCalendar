@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.5]
+
+- Touch buttons light up once: on a touch screen, lifting the finger no longer switches the
+  highlight off before the tap registers (which looked like a double flash), and the extra flash
+  after the calendar redraws is gone. The button stays lit until the view changes (120 ms).
+
 ## [0.6.4]
 
 - Empty notes and locations are cleaned up when events arrive, including when they come through as

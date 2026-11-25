@@ -140,6 +140,22 @@ The week rows share the height evenly, and each day shows as many event cards as
 
 ![Day mode](screenshots/preview-day.png)
 
+### Switching views and picking a month
+
+The title bar has a **2 Weeks | 4 Weeks | Month** switch. The view you pick stays until you pick
+another (or MagicMirror restarts); `mode` is the view it starts in. Switching keeps roughly the
+same dates in view.
+
+Tap the title (the dates, with the ⌄ beside them) to open a month picker: the 12 months of a year,
+with arrows to change the year. The current month is outlined and the month in view is filled. Pick
+a month and the 2- and 4-week views start at the week holding its 1st; Month view shows the whole
+month. ‹ › then step on from there, and **Today** (or `navigationResetSeconds` of no use) comes back.
+
+![Month picker](screenshots/month-picker.png)
+
+The calendar can only show events the calendar module has fetched: by default up to a year ahead
+(its `maximumNumberOfDays`, 365), and past events only with `broadcastPastEvents: true`.
+
 ### Event details
 
 Tap any event (a card, an all-day bar, or a compact entry) to open a card with everything the
@@ -228,6 +244,8 @@ Every option at its default:
     // Touch
     touchNavigation: true,
     navigationResetSeconds: 120,
+    viewSwitch: ["twoWeeks", "fourWeeks", "currentMonth"],
+    monthPicker: true,
     eventPopup: true,
     popupTimeout: 45,
 
@@ -295,9 +313,11 @@ Options added by this module:
 | `rowHeight` | `128` | With `height: "auto"`: minimum height of each week row, px |
 | `maxEventLanes` | `0` | Rows of all-day / multi-day bars per week (compact: rows of events) before "+N more"; `0` = as many as fit |
 | `touchNavigation` | `true` | ‹ Today › buttons in the title bar. They move by a month, or by the view length in week modes. A pressed button lights up, then flashes once when the view changes |
+| `viewSwitch` | `["twoWeeks", "fourWeeks", "currentMonth"]` | Views offered as buttons in the title bar, in order (any of the `mode` values); `[]` hides the switch |
+| `monthPicker` | `true` | Tap the title to pick a month to show |
 | `eventPopup` | `true` | Tap an event for its details; tap "+N more" for the day's list. `false` turns tapping off |
 | `popupTimeout` | `45` | Seconds before an open popup closes by itself; `0` = stays open until closed |
-| `navigationResetSeconds` | `120` | Go back to the current month after this many seconds; `0` = stay |
+| `navigationResetSeconds` | `120` | Go back to today after this many seconds (the chosen view stays); `0` = stay |
 | `updateDelay` | `5` | Seconds to wait for all calendars to report before redrawing (fixed at 5 in the original) |
 | `animationSpeed` | `600` | Cross-fade when the grid redraws, ms |
 | `locale` | `null` | e.g. `"en-GB"`, `"de"`; `null` follows MagicMirror's `language` |

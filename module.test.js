@@ -322,7 +322,7 @@ test("week mode title shows the date range; week numbers add a column", () => {
 test("touch buttons: press shows at once, then the view changes and the button flashes", () => {
   const { m, timers } = setup();
   const dom = m.getDom();
-  const btns = dom.findAll("gmc-nav-btn");
+  const btns = dom.findAll("gmc-nav")[0].findAll("gmc-nav-btn");
   assert.equal(btns.length, 3);
   btns[2].listeners.pointerdown({});
   assert.ok(btns[2].classList.contains("gmc-pressed"));
@@ -338,10 +338,10 @@ test("touch buttons: press shows at once, then the view changes and the button f
   assert.equal(m.navOffset, 1);
   const redrawn = m.getDom();
   assert.equal(redrawn.findAll("gmc-heading-main")[0].textContent, "December");
-  const next = redrawn.findAll("gmc-nav-btn")[2];
+  const next = redrawn.findAll("gmc-nav")[0].findAll("gmc-nav-btn")[2];
   assert.ok(next.classList.contains("gmc-nav-flash"));
   // only once
-  assert.ok(!m.getDom().findAll("gmc-nav-btn")[2].classList.contains("gmc-nav-flash"));
+  assert.ok(!m.getDom().findAll("gmc-nav")[0].findAll("gmc-nav-btn")[2].classList.contains("gmc-nav-flash"));
 });
 
 test("sunrise and sunset (Chicago, 23 Nov 2026)", () => {
@@ -586,4 +586,82 @@ test("eventPopup: false leaves events untappable", () => {
   const card = m.getDom().findAll("gmc-card")[0];
   assert.ok(!card.classList.contains("gmc-tappable"));
   assert.equal(card.listeners.click, undefined);
+});
+
+const tap = (m, timers, el) => {
+  m.lastPress = 0; // the test clock is frozen, so two taps would look like a double tap
+  el.listeners.click({});
+  const t = timers.at(-1);
+  if (t && t.ms === 140) t.fn(); // buttons act after their press flash
+};
+
+test("view switch: 2 Weeks / 4 Weeks / Month buttons change the view and mark the current one", () => {
+  const { m, timers } = setup({ mode: "fourWeeks" });
+  let views = m.getDom().findAll("gmc-view-btn");
+  assert.equal(views.map((b) => b.textContent).join("|"), "2 Weeks|4 Weeks|Month");
+  assert.ok(views[1].classList.contains("gmc-view-current"));
+  tap(m, timers, views[0]);
+  let dom = m.getDom();
+  assert.equal(dom.findAll("gmc-week").length, 2);
+  assert.ok(dom.findAll("gmc-view-btn")[0].classList.contains("gmc-view-current"));
+  tap(m, timers, dom.findAll("gmc-view-btn")[2]);
+  dom = m.getDom();
+  assert.equal(dom.findAll("gmc-heading-main")[0].textContent, "November");
+  assert.equal(m._range(new Date(NOW)).kind, "month");
+});
+
+test("switching views keeps the dates you were looking at", () => {
+  const { m } = setup({ mode: "fourWeeks" });
+  m._navigate(1); // Dec 20 – Jan 16
+  m._setView("twoWeeks");
+  assert.equal(ymd(m._range(new Date(NOW)).start), "2026-12-20");
+  m._setView("currentMonth");
+  assert.equal(m._range(new Date(NOW)).month.getMonth(), 11);
+  m._navigate(0); // Today
+  assert.equal(m._range(new Date(NOW)).month.getMonth(), 10);
+  assert.equal(m._mode(), "currentmonth"); // the picked view stays
+});
+
+test("month picker: tap the title, pick a month; week views start at its first week", () => {
+  const { m, timers } = setup({ mode: "fourWeeks" });
+  const heading = m.getDom().findAll("gmc-heading")[0];
+  heading.listeners.click({});
+  const card = m.popupEl.findAll("gmc-popup-months")[0];
+  assert.equal(card.findAll("gmc-months-year")[0].text(), "2026");
+  const tiles = card.findAll("gmc-month-tile");
+  assert.equal(tiles.length, 12);
+  assert.ok(tiles[10].classList.contains("gmc-month-now"));
+  assert.ok(tiles[10].classList.contains("gmc-month-shown"));
+  // next year, then March
+  card.findAll("gmc-months-head")[0].children[2].listeners.click({});
+  const card2 = m.popupEl.findAll("gmc-popup-months")[0];
+  assert.equal(card2.findAll("gmc-months-year")[0].text(), "2027");
+  card2.findAll("gmc-month-tile")[2].listeners.click({});
+  assert.equal(m.popupEl, null);
+  const r = m._range(new Date(NOW));
+  assert.equal(ymd(r.start), "2027-2-28"); // the week holding 1 March 2027
+  assert.equal(r.weeks, 4);
+  // the picker now marks March 2027 as shown
+  m.getDom().findAll("gmc-heading")[0].listeners.click({});
+  assert.ok(m.popupEl.findAll("gmc-month-tile")[2].classList.contains("gmc-month-shown"));
+  // Today goes back, and the auto-return timer was set
+  m._navigate(0);
+  assert.equal(ymd(m._range(new Date(NOW)).start), "2026-11-22");
+});
+
+test("month picker in month view shows the whole month; arrows step from there", () => {
+  const { m } = setup({ mode: "currentMonth" });
+  m._showMonth(2027, 6);
+  assert.equal(m._range(new Date(NOW)).month.getMonth(), 6);
+  m._navigate(1);
+  assert.equal(m._range(new Date(NOW)).month.getMonth(), 7);
+  m._showMonth(2026, 10);
+  assert.ok(m._atToday());
+});
+
+test("viewSwitch [] and monthPicker false hide the controls", () => {
+  const { m } = setup({ viewSwitch: [], monthPicker: false });
+  const dom = m.getDom();
+  assert.equal(dom.findAll("gmc-view-btn").length, 0);
+  assert.equal(dom.findAll("gmc-heading")[0].listeners.click, undefined);
 });

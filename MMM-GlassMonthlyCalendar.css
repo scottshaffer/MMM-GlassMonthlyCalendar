@@ -976,3 +976,151 @@ body.mm-day .gmc-event-past,
   background: linear-gradient(160deg, #2b3f66, #16233f);
   color: #fff;
 }
+
+/* === View switch (2 Weeks / 4 Weeks / Month): one joined pill of touch buttons === */
+.gmc-views {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgba(4, 10, 30, 0.45);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.gmc-views .gmc-view-btn {
+  height: 46px;
+  min-width: 0;
+  padding: 0 18px;
+  font-size: 15px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: color-mix(in srgb, #fff 78%, transparent);
+}
+
+.gmc-views .gmc-view-btn.gmc-view-current:not(.gmc-pressed) {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: linear-gradient(160deg, rgba(40, 60, 110, 0.95), rgba(20, 32, 66, 0.95));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 3px 10px rgba(0, 8, 30, 0.35);
+  color: #fff;
+}
+
+body.mm-day .gmc-views,
+.gmc-light .gmc-views {
+  background: rgba(11, 21, 48, 0.12);
+  box-shadow: inset 0 1px 3px rgba(11, 21, 48, 0.18);
+}
+
+body.mm-day .gmc-views .gmc-view-btn:not(.gmc-pressed),
+.gmc-light .gmc-views .gmc-view-btn:not(.gmc-pressed) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: #1d2738;
+}
+
+body.mm-day .gmc-views .gmc-view-btn.gmc-view-current:not(.gmc-pressed),
+.gmc-light .gmc-views .gmc-view-btn.gmc-view-current:not(.gmc-pressed) {
+  background: linear-gradient(160deg, #2b3f66, #16233f);
+  box-shadow: 0 3px 10px rgba(40, 56, 84, 0.3);
+  color: #fff;
+}
+
+/* === Tappable title: opens the month picker === */
+.gmc-heading.gmc-tappable {
+  align-items: center;
+  margin-left: -12px;
+  padding: 6px 14px 6px 12px;
+  border-radius: 16px;
+}
+
+.gmc-heading.gmc-tappable.gmc-pressed {
+  transform: scale(0.98);
+  filter: none;
+  background: color-mix(in srgb, var(--gmc-press) 22%, transparent);
+}
+
+.gmc-heading-pick {
+  align-self: center;
+  margin-left: 2px;
+  font-size: 18px;
+  color: var(--gmc-accent);
+  opacity: 0.85;
+}
+
+/* === Month picker === */
+.gmc-popup-months {
+  width: min(560px, 88vw);
+}
+
+.gmc-months-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  margin: 4px 0 22px;
+}
+
+.gmc-months-head .gmc-months-year {
+  margin: 0;
+  min-width: 110px;
+  justify-content: center;
+}
+
+.gmc-months-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.gmc-month-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.gmc-month-tile.gmc-month-now {
+  border-color: color-mix(in srgb, var(--gmc-accent) 70%, transparent);
+  color: color-mix(in srgb, var(--gmc-accent) 70%, white);
+}
+
+.gmc-month-tile.gmc-month-shown {
+  border-color: transparent;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gmc-press) 85%, white), var(--gmc-press));
+  color: #06142b;
+}
+
+.gmc-month-tile.gmc-pressed {
+  transform: scale(0.94);
+  filter: none;
+  background: var(--gmc-press);
+  color: #06142b;
+}
+
+.gmc-popup-overlay.gmc-light .gmc-month-tile {
+  border-color: rgba(29, 39, 56, 0.12);
+  background: rgba(29, 39, 56, 0.04);
+}
+
+.gmc-popup-overlay.gmc-light .gmc-month-tile.gmc-month-now {
+  color: #0369a1;
+  border-color: rgba(3, 105, 161, 0.5);
+}
+
+.gmc-popup-overlay.gmc-light .gmc-month-tile.gmc-month-shown {
+  background: linear-gradient(160deg, #2b3f66, #16233f);
+  color: #fff;
+}
+
+.gmc-popup-overlay.gmc-light .gmc-months-head .gmc-nav-btn:not(.gmc-pressed) {
+  border-color: rgba(11, 21, 48, 0.25);
+  background: linear-gradient(160deg, #2b3f66, #16233f);
+  color: #fff;
+}

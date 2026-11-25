@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0]
+
+- View switch in the title bar: 2 Weeks / 4 Weeks / Month (`viewSwitch`). The picked view stays;
+  switching keeps the same dates in view.
+- Month picker (`monthPicker`): tap the title for the 12 months of a year (arrows change the year);
+  week views then start at the week holding the month's 1st, Month view shows the whole month.
+- `navigationResetSeconds` returns to today but keeps the picked view.
+
 ## [0.5.0]
 
 - Tap an event for a details card: calendar name and color, title, date, times and duration (or all

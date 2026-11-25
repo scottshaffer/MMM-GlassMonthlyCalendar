@@ -45,6 +45,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
     // ---- Touch navigation (the title-bar arrows) ----
     touchNavigation: true,
     navigationResetSeconds: 120, // return to the current period after this long; 0 = never
+    viewSwitch: ["twoWeeks", "fourWeeks", "currentMonth"], // views offered as buttons in the title bar; [] = none
+    monthPicker: true, // tap the title to pick a month to show
     eventPopup: true, // tap an event for a card with everything known about it; tap "+N more" for the day's list
     popupTimeout: 45, // seconds before an open popup closes by itself; 0 = stays open
 
@@ -81,6 +83,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
     this.eventsKey = "";
     this.displayedDay = this._ordinal(new Date());
     this.navOffset = 0;
+    this.viewMode = null; // a view picked with the view switch (null = config.mode)
+    this.anchor = null; // a date picked with the month picker (null = today)
     this.updateTimer = null;
     this.midnightTimer = null;
     this.navTimer = null;
@@ -257,17 +261,59 @@ Module.register("MMM-GlassMonthlyCalendar", {
 
   _navigate(step) {
     this._closePopup();
-    this.navOffset = step === 0 ? 0 : this.navOffset + step;
+    if (step === 0) {
+      this.navOffset = 0;
+      this.anchor = null;
+    } else {
+      this.navOffset += step;
+    }
+    this._afterMove();
+  },
+
+  _atToday() {
+    return this.navOffset === 0 && !this.anchor;
+  },
+
+  // Redraw, and go back to today after navigationResetSeconds (the chosen view stays).
+  _afterMove() {
     this._clear("navTimer");
     const reset = Number(this.config.navigationResetSeconds) || 0;
-    if (this.navOffset !== 0 && reset > 0) {
+    if (!this._atToday() && reset > 0) {
       this.navTimer = setTimeout(() => {
         this.navTimer = null;
         this.navOffset = 0;
+        this.anchor = null;
         this._redraw();
       }, reset * 1000);
     }
     this._redraw(0);
+  },
+
+  // Switch between 2 weeks / 4 weeks / month, keeping roughly the same dates in view.
+  _setView(mode) {
+    this._closePopup();
+    if (this._mode() === String(mode).toLowerCase()) return;
+    if (!this._atToday()) {
+      const r = this._range(new Date());
+      this.anchor = r.kind === "month" ? r.month : r.start;
+      this.navOffset = 0;
+    }
+    this.viewMode = mode;
+    this._afterMove();
+  },
+
+  // Show a picked month: from its first week (week views) or the whole month (month view).
+  _showMonth(year, month) {
+    this._closePopup();
+    const now = new Date();
+    const mode = this._mode();
+    if (year === now.getFullYear() && month === now.getMonth() && !(mode in this.WEEK_MODES) && !(mode in this.MONTH_MODES && this.MONTH_MODES[mode] !== 0)) {
+      this.anchor = null; // the current month in month view is just "today"
+    } else {
+      this.anchor = new Date(year, month, 1);
+    }
+    this.navOffset = 0;
+    this._afterMove();
   },
 
   /* ---------- day mode ---------- */
@@ -425,16 +471,22 @@ Module.register("MMM-GlassMonthlyCalendar", {
   },
 
   // What the grid shows for "now" and the current navigation offset.
+  _mode() {
+    return String(this.viewMode || this.config.mode || "currentMonth").toLowerCase();
+  },
+
   _range(now) {
-    const mode = String(this.config.mode || "currentMonth").toLowerCase();
+    const mode = this._mode();
     const firstDow = this._firstDowIndex(now);
+    const base = this.anchor || now;
     if (mode in this.WEEK_MODES) {
       const weeks = this.WEEK_MODES[mode];
-      const start = this._addDays(this._startOfWeek(now, firstDow), this.navOffset * weeks * 7);
+      const start = this._addDays(this._startOfWeek(base, firstDow), this.navOffset * weeks * 7);
       return { kind: "weeks", start, weeks, month: null, firstDow };
     }
-    const delta = (mode in this.MONTH_MODES ? this.MONTH_MODES[mode] : 0) + this.navOffset;
-    const month = new Date(now.getFullYear(), now.getMonth() + delta, 1);
+    // lastMonth / nextMonth shift from today; a picked month is shown as it is.
+    const delta = (this.anchor ? 0 : mode in this.MONTH_MODES ? this.MONTH_MODES[mode] : 0) + this.navOffset;
+    const month = new Date(base.getFullYear(), base.getMonth() + delta, 1);
     const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
     const start = this._startOfWeek(month, firstDow);
     const weeks = Math.min(6, Math.ceil((this._ordinal(last) - this._ordinal(start) + 1) / 7));
@@ -615,7 +667,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
 
   // Touch buttons. Pressing one darkens it at once; the calendar changes a moment later (so the
   // press can be seen), and the same button in the redrawn title bar flashes to confirm it.
-  _button(parent, icon, label, step) {
+  _button(parent, icon, label, action) {
     const b = this._el("button", "gmc-nav-btn", parent);
     b.type = "button";
     b.setAttribute("aria-label", label);
@@ -640,7 +692,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
       this._clear("pressTimer");
       this.pressTimer = setTimeout(() => {
         this.pressTimer = null;
-        this._navigate(step);
+        if (typeof action === "function") action();
+        else this._navigate(action);
       }, 140);
     });
     return b;
@@ -679,6 +732,10 @@ Module.register("MMM-GlassMonthlyCalendar", {
       const heading = this._el("div", "gmc-heading", bar);
       this._el("span", "gmc-heading-main", heading, t.main);
       this._el("span", "gmc-heading-sub", heading, t.sub);
+      if (c.monthPicker) {
+        this._el("i", "fa fa-chevron-down gmc-heading-pick", heading);
+        this._tapAlways(heading, () => this._openMonthPicker(range));
+      }
 
       const right = this._el("div", "gmc-titlebar-right", bar);
       const legend = this._legend(visibleEvents);
@@ -691,12 +748,22 @@ Module.register("MMM-GlassMonthlyCalendar", {
           this._el("span", "gmc-legend-name", item, name);
         }
       }
+      const views = Array.isArray(c.viewSwitch) ? c.viewSwitch.filter((v) => this._viewLabel(v)) : [];
+      if (views.length > 1) {
+        const seg = this._el("div", "gmc-views", right);
+        const current = this._mode();
+        for (const v of views) {
+          const b = this._button(seg, null, this._viewLabel(v), () => this._setView(v));
+          b.classList.add("gmc-view-btn");
+          if (String(v).toLowerCase() === current) b.classList.add("gmc-view-current");
+        }
+      }
       if (c.touchNavigation) {
         const nav = this._el("div", "gmc-nav", right);
         this._button(nav, "chevron-left", "Previous", -1);
         const todayBtn = this._button(nav, null, "Today", 0);
         todayBtn.classList.add("gmc-nav-today");
-        if (this.navOffset === 0) todayBtn.classList.add("gmc-nav-current");
+        if (this._atToday()) todayBtn.classList.add("gmc-nav-current");
         this._button(nav, "chevron-right", "Next", 1);
       }
     }
@@ -926,6 +993,70 @@ Module.register("MMM-GlassMonthlyCalendar", {
       return `${a.replace(/[ap]m$/, "")} – ${b}`;
     }
     return `${a} – ${b}`;
+  },
+
+  /* ---------- views and month picker ---------- */
+
+  _viewLabel(mode) {
+    const m = String(mode).toLowerCase();
+    if (m in this.MONTH_MODES) return "Month";
+    const w = this.WEEK_MODES[m];
+    return w ? (w === 1 ? "1 Week" : `${w} Weeks`) : null;
+  },
+
+  // Like _tappable, but always on (for controls rather than events).
+  _tapAlways(el, onTap) {
+    el.classList.add("gmc-tappable");
+    const press = () => el.classList.add("gmc-pressed");
+    const release = () => el.classList.remove("gmc-pressed");
+    el.addEventListener("pointerdown", press);
+    for (const t of ["pointerup", "pointercancel", "pointerleave"]) el.addEventListener(t, release);
+    el.addEventListener("click", (ev) => {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      release();
+      onTap();
+    });
+  },
+
+  // The month a view mostly shows: the month itself, or the month of the first full week.
+  _shownMonth(range) {
+    if (range.kind === "month") return range.month;
+    const d = range.weeks > 1 ? this._addDays(range.start, 7) : range.start;
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  },
+
+  // A year with its 12 months; tap a month to show it. The arrows change the year.
+  _openMonthPicker(range, year) {
+    const shown = this._shownMonth(range);
+    const y = year ?? shown.getFullYear();
+    const now = new Date();
+    const card = this._popupShell(null);
+    card.classList.add("gmc-popup-months");
+
+    const head = this._el("div", "gmc-months-head", card);
+    const yearBtn = (icon, label, dy) => {
+      const b = this._el("button", "gmc-nav-btn", head);
+      b.type = "button";
+      b.setAttribute("aria-label", label);
+      this._el("i", `fa fa-${icon}`, b);
+      b.addEventListener("click", (ev) => {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        this._openMonthPicker(range, y + dy);
+      });
+    };
+    yearBtn("chevron-left", "Previous year", -1);
+    this._el("div", "gmc-popup-title gmc-months-year", head, String(y));
+    yearBtn("chevron-right", "Next year", 1);
+
+    const fmt = new Intl.DateTimeFormat(this._locale(), { month: "short" });
+    const grid = this._el("div", "gmc-months-grid", card);
+    for (let m = 0; m < 12; m++) {
+      const tile = this._el("div", "gmc-month-tile", grid, fmt.format(new Date(y, m, 1)));
+      if (y === now.getFullYear() && m === now.getMonth()) tile.classList.add("gmc-month-now");
+      if (y === shown.getFullYear() && m === shown.getMonth()) tile.classList.add("gmc-month-shown");
+      this._tapAlways(tile, () => this._showMonth(y, m));
+    }
+    return card;
   },
 
   /* ---------- event popup ---------- */

@@ -689,3 +689,19 @@ test("empty notes and location (sent as false) are left out of the popup", () =>
   assert.equal(m._plainText(""), "");
   assert.equal(m._plainText("   "), "");
 });
+
+test("the details card closes after 30 seconds by default; popupTimeout changes it", () => {
+  let { m, timers } = setup();
+  feed(m, timers, [ev("Golf", ms(2026, 10, 25, 10), ms(2026, 10, 25, 12))]);
+  m._openEvent(m.events[0]);
+  assert.equal(timers.at(-1).ms, 30000);
+  ({ m, timers } = setup({ popupTimeout: 90 }));
+  feed(m, timers, [ev("Golf", ms(2026, 10, 25, 10), ms(2026, 10, 25, 12))]);
+  m._openEvent(m.events[0]);
+  assert.equal(timers.at(-1).ms, 90000);
+  ({ m, timers } = setup({ popupTimeout: 0 }));
+  feed(m, timers, [ev("Golf", ms(2026, 10, 25, 10), ms(2026, 10, 25, 12))]);
+  const before = timers.length;
+  m._openEvent(m.events[0]);
+  assert.equal(timers.length, before); // no auto-close
+});

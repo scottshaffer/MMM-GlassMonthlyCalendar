@@ -48,7 +48,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
     viewSwitch: ["twoWeeks", "fourWeeks"], // the calendar-icon button steps through these views on each tap; [] = no button
     monthPicker: true, // tap the title to pick a month to show
     eventPopup: true, // tap an event for a card with everything known about it; tap "+N more" for the day's list
-    popupTimeout: 45, // seconds before an open popup closes by itself; 0 = stays open
+    popupTimeout: 30, // seconds before an open popup closes by itself; 0 = stays open until closed
 
     // ---- Behaviour ----
     updateDelay: 5, // seconds to wait for the calendar module to finish broadcasting

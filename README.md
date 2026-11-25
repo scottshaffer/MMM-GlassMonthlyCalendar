@@ -106,7 +106,7 @@ and all three switch together.
 | ‹ › and Today | Move back or forward, or return to today |
 
 Two minutes after you move away from today, the calendar goes back to it (`navigationResetSeconds`),
-and an open card closes after 45 seconds (`popupTimeout`).
+and an open card closes after 30 seconds (`popupTimeout`).
 
 <p>
   <img src="screenshots/popup.jpg" alt="Event details" width="49%">
@@ -135,7 +135,7 @@ All options are optional. The ones you are most likely to change come first.
 | `reserveWidth` / `reserveGap` | `380` / `30` | Width left beside the calendar for the Glass cards, px |
 | `width` / `height` | `"fill"` | `"fill"` uses the screen; or any CSS width / a height in px (`height: "auto"` uses `rowHeight`) |
 | `navigationResetSeconds` | `120` | Seconds after moving away from today before it goes back; `0` = never |
-| `popupTimeout` | `45` | Seconds before an event card closes by itself; `0` = never |
+| `popupTimeout` | `30` | Seconds an event card stays open before closing by itself; `0` = stays open until closed |
 | `eventPopup` / `monthPicker` / `touchNavigation` | `true` | Turn off tapping events, the month picker, or the ‹ Today › buttons |
 | `showHeader` / `showLegend` | `true` | Title bar; calendar legend (shown with 2 or more calendars) |
 | `latitude` / `longitude` | `null` | Location for `dayMode: "auto"` when MMM-GlassTempest isn't used |

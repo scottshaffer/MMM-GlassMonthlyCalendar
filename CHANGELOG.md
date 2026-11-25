@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.3]
+
+- The event details card now closes by itself after 30 seconds (was 45). `popupTimeout` sets the
+  time in seconds; `0` keeps it open until closed.
+
 ## [0.6.2]
 
 - Event popup: an event with no notes or location no longer shows "false" (the calendar module

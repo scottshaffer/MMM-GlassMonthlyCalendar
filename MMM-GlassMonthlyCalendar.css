@@ -582,12 +582,37 @@
   color: #fff;
 }
 
+/* Day mode: each calendar's color deepened toward navy, with white text, so entries stay
+   readable on the light glass. --gmc-day-shade sets how much of the calendar color is kept
+   (lower = darker); override it in custom.css if you like. */
+body.mm-day .gmc-window,
+.gmc-window.gmc-light {
+  --gmc-day-shade: 58%;
+  --gmc-day-ink: #0b1530;
+}
+
 body.mm-day .gmc-card,
 .gmc-light .gmc-card {
+  --gmc-ev-dark: color-mix(in srgb, var(--gmc-ev-c) var(--gmc-day-shade), var(--gmc-day-ink));
+  border-color: color-mix(in srgb, var(--gmc-ev-dark) 80%, black);
   background:
-    linear-gradient(90deg, var(--gmc-ev-c) 0 3px, transparent 3px),
-    color-mix(in srgb, var(--gmc-ev-c) 24%, rgba(255, 255, 255, 0.6));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 3px 10px rgba(40, 56, 84, 0.1);
+    linear-gradient(90deg, color-mix(in srgb, var(--gmc-ev-c) 70%, white) 0 3px, transparent 3px),
+    linear-gradient(180deg, color-mix(in srgb, var(--gmc-ev-dark) 92%, white), var(--gmc-ev-dark));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 3px 10px rgba(40, 56, 84, 0.18);
+  color: #fff;
+}
+
+body.mm-day .gmc-card .gmc-card-line,
+.gmc-light .gmc-card .gmc-card-line,
+body.mm-day .gmc-card .gmc-card-time,
+.gmc-light .gmc-card .gmc-card-time {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+body.mm-day .gmc-card.gmc-card-now,
+.gmc-light .gmc-card.gmc-card-now {
+  border-color: var(--gmc-ev-c);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gmc-ev-c) 45%, transparent), 0 3px 10px rgba(40, 56, 84, 0.2);
 }
 
 .gmc-waiting {
@@ -631,7 +656,17 @@ body.mm-day .gmc-glass-events .gmc-event-bar,
 body.mm-day .gmc-glass-events .gmc-event-bar,
 .gmc-window.gmc-light.gmc-glass-events .gmc-event-bar {
   --gmc-ev-c: var(--gmc-ev, var(--gmc-accent));
-  background: color-mix(in srgb, var(--gmc-ev-c) 30%, rgba(255, 255, 255, 0.5));
+  --gmc-ev-dark: color-mix(in srgb, var(--gmc-ev-c) var(--gmc-day-shade), var(--gmc-day-ink));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gmc-ev-dark) 92%, white), var(--gmc-ev-dark));
+  border-color: color-mix(in srgb, var(--gmc-ev-dark) 80%, black);
+  color: #fff;
+}
+
+/* Compact timed entries: the time and title in the calendar's deep shade */
+body.mm-day .gmc-glass-events .gmc-event-timed,
+.gmc-window.gmc-light.gmc-glass-events .gmc-event-timed {
+  color: color-mix(in srgb, var(--gmc-ev, var(--gmc-accent)) var(--gmc-day-shade), var(--gmc-day-ink));
+  font-weight: 650;
 }
 
 body.mm-day .gmc-today .gmc-date-num,
@@ -673,4 +708,11 @@ body.mm-day .gmc-nav-btn,
   .gmc-window::after {
     animation: none;
   }
+}
+
+/* Day mode: past entries fade less, so white text on the deep shades stays legible */
+body.mm-day .gmc-event-past,
+.gmc-light .gmc-event-past {
+  opacity: 0.68;
+  filter: saturate(0.6);
 }

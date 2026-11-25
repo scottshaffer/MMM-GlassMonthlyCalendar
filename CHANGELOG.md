@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1]
+
+- Day mode: events are a deep shade of each calendar's color with white text instead of pale tints,
+  for legibility on the light glass. `--gmc-day-shade` (default 58%) sets how dark. Past events
+  fade less in day mode.
+
 ## [0.4.0]
 
 - Each calendar gets its own color: calendars without a `color` in the calendar module (which then

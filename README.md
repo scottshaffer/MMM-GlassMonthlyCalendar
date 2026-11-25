@@ -157,6 +157,9 @@ every weather update. Nothing else is needed if GlassTempest is on the mirror.
 - If you changed GlassTempest's `weatherNotification`, set `sunNotification` to the same name.
   Any module that sends `sunrise` and `sunset` in a notification works the same way.
 - `dayMode: "day"` keeps it light all the time; `"night"` keeps it dark.
+- In day mode each calendar's events are a deep shade of its color with white text. To make them
+  lighter or darker, set the share of the calendar color kept (lower = darker) in `custom.css`:
+  `.gmc-window { --gmc-day-shade: 50%; }` (default 58%).
 - `dayModeScope: "calendar"` (the default) switches only this window. To switch the clock and
   weather cards at the same moment, also give MMM-GlassClock and MMM-GlassTempest (0.2.0 or
   later) `dayMode: "auto"`.

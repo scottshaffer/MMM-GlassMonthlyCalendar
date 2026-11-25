@@ -610,15 +610,35 @@ Module.register("MMM-GlassMonthlyCalendar", {
     return [...seen.entries()];
   },
 
+  // Touch buttons. Pressing one darkens it at once; the calendar changes a moment later (so the
+  // press can be seen), and the same button in the redrawn title bar flashes to confirm it.
   _button(parent, icon, label, step) {
     const b = this._el("button", "gmc-nav-btn", parent);
     b.type = "button";
     b.setAttribute("aria-label", label);
     if (icon) this._el("i", `fa fa-${icon}`, b);
     else b.textContent = label;
+    if (this.flashButton === label) {
+      b.classList.add("gmc-nav-flash");
+      this.flashButton = null;
+    }
+    const press = () => b.classList.add("gmc-pressed");
+    const release = () => b.classList.remove("gmc-pressed");
+    b.addEventListener("pointerdown", press);
+    b.addEventListener("touchstart", press);
+    for (const t of ["pointerup", "pointercancel", "pointerleave", "touchcancel"]) b.addEventListener(t, release);
     b.addEventListener("click", (ev) => {
       if (ev && ev.stopPropagation) ev.stopPropagation();
-      this._navigate(step);
+      const now = Date.now();
+      if (this.lastPress && now - this.lastPress < 300) return; // ignore a double tap
+      this.lastPress = now;
+      press();
+      this.flashButton = label;
+      this._clear("pressTimer");
+      this.pressTimer = setTimeout(() => {
+        this.pressTimer = null;
+        this._navigate(step);
+      }, 140);
     });
     return b;
   },

@@ -278,7 +278,7 @@ Options added by this module:
 | `maxWidth` | `0` | Cap on the window width, px (`0` = no cap) |
 | `rowHeight` | `128` | With `height: "auto"`: minimum height of each week row, px |
 | `maxEventLanes` | `0` | Rows of all-day / multi-day bars per week (compact: rows of events) before "+N more"; `0` = as many as fit |
-| `touchNavigation` | `true` | ‹ Today › buttons in the title bar. They move by a month, or by the view length in week modes |
+| `touchNavigation` | `true` | ‹ Today › buttons in the title bar. They move by a month, or by the view length in week modes. A pressed button lights up, then flashes once when the view changes |
 | `navigationResetSeconds` | `120` | Go back to the current month after this many seconds; `0` = stay |
 | `updateDelay` | `5` | Seconds to wait for all calendars to report before redrawing (fixed at 5 in the original) |
 | `animationSpeed` | `600` | Cross-fade when the grid redraws, ms |

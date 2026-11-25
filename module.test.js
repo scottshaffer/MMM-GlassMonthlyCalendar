@@ -314,14 +314,29 @@ test("week mode title shows the date range; week numbers add a column", () => {
   assert.match(dom.style["--gmc-columns"], /^3\.2ch /);
 });
 
-test("touch navigation buttons work", () => {
-  const { m } = setup();
+test("touch buttons: press shows at once, then the view changes and the button flashes", () => {
+  const { m, timers } = setup();
   const dom = m.getDom();
   const btns = dom.findAll("gmc-nav-btn");
   assert.equal(btns.length, 3);
+  btns[2].listeners.pointerdown({});
+  assert.ok(btns[2].classList.contains("gmc-pressed"));
+  btns[2].listeners.pointerup({});
+  assert.ok(!btns[2].classList.contains("gmc-pressed"));
+
   btns[2].listeners.click({});
+  assert.ok(btns[2].classList.contains("gmc-pressed")); // visible before the redraw
+  assert.equal(m.navOffset, 0);
+  const t = timers.at(-1);
+  assert.ok(t.ms > 0 && t.ms <= 200);
+  t.fn();
   assert.equal(m.navOffset, 1);
-  assert.equal(m.getDom().findAll("gmc-heading-main")[0].textContent, "December");
+  const redrawn = m.getDom();
+  assert.equal(redrawn.findAll("gmc-heading-main")[0].textContent, "December");
+  const next = redrawn.findAll("gmc-nav-btn")[2];
+  assert.ok(next.classList.contains("gmc-nav-flash"));
+  // only once
+  assert.ok(!m.getDom().findAll("gmc-nav-btn")[2].classList.contains("gmc-nav-flash"));
 });
 
 test("sunrise and sunset (Chicago, 23 Nov 2026)", () => {

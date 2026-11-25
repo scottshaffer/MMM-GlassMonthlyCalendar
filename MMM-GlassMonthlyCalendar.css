@@ -11,6 +11,7 @@
 
 .gmc-window {
   --gmc-accent: var(--mm-accent-2, #7dd3fc);
+  --gmc-press: #7dd3fc; /* touch button press / flash color */
   --gmc-text: var(--mm-text, #e9edf5);
   --gmc-text-2: var(--mm-text-2, rgba(233, 237, 245, 0.72));
   --gmc-line: rgba(255, 255, 255, 0.075);
@@ -178,30 +179,53 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 46px;
-  height: 46px;
-  padding: 0 14px;
+  min-width: 52px;
+  height: 52px;
+  padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(0, 12, 48, 0.25);
-  color: var(--gmc-text);
+  /* Darker glass than the window, so the buttons stand out as things to touch */
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: linear-gradient(160deg, rgba(10, 20, 52, 0.62), rgba(6, 12, 34, 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 4px 14px rgba(0, 8, 30, 0.4);
+  color: #fff;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 650;
   letter-spacing: 0.3px;
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s ease, background 0.2s ease;
+  transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.gmc-nav-btn:active {
-  transform: scale(0.94);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08));
+/* Pressed: sinks and fills with the press color straight away */
+.gmc-nav-btn:active,
+.gmc-nav-btn.gmc-pressed {
+  transform: scale(0.9);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gmc-press) 80%, white), var(--gmc-press));
+  border-color: color-mix(in srgb, var(--gmc-press) 60%, white);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gmc-press) 35%, transparent), 0 0 22px color-mix(in srgb, var(--gmc-press) 70%, transparent);
+  color: #06142b;
 }
 
-.gmc-nav-today.gmc-nav-current {
-  color: var(--gmc-accent);
+/* After the calendar changes, the button that was pressed flashes once and a ring spreads out */
+.gmc-nav-btn.gmc-nav-flash {
+  animation: gmc-nav-flash 0.6s ease-out;
+}
+
+@keyframes gmc-nav-flash {
+  0% {
+    background: var(--gmc-press);
+    color: #06142b;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gmc-press) 80%, transparent), 0 0 24px var(--gmc-press);
+  }
+  100% {
+    box-shadow: 0 0 0 18px color-mix(in srgb, var(--gmc-press) 0%, transparent), 0 4px 14px rgba(0, 8, 30, 0.4);
+  }
+}
+
+.gmc-nav-today.gmc-nav-current:not(.gmc-pressed) {
+  color: color-mix(in srgb, var(--gmc-accent) 70%, white);
 }
 
 /* === Sheet (the grid area): a slightly darker inner pane for legibility === */
@@ -625,6 +649,7 @@ body.mm-day .gmc-card.gmc-card-now,
    or .gmc-light on this window only (dayModeScope "calendar") === */
 body.mm-day .gmc-window,
 .gmc-window.gmc-light {
+  --gmc-press: #38bdf8;
   --gmc-accent: var(--mm-accent-2, #0369a1);
   --gmc-text: var(--mm-text, #1d2738);
   --gmc-text-2: var(--mm-text-2, #5a6679);
@@ -690,11 +715,17 @@ body.mm-day .gmc-day.gmc-today,
   background: linear-gradient(170deg, rgba(255, 255, 255, 0.9), rgba(224, 242, 254, 0.7));
 }
 
-body.mm-day .gmc-nav-btn,
-.gmc-light .gmc-nav-btn {
-  border-color: rgba(29, 39, 56, 0.12);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.45));
-  box-shadow: 0 4px 12px rgba(40, 56, 84, 0.14);
+body.mm-day .gmc-nav-btn:not(.gmc-pressed),
+.gmc-light .gmc-nav-btn:not(.gmc-pressed) {
+  border-color: rgba(11, 21, 48, 0.25);
+  background: linear-gradient(160deg, #2b3f66, #16233f);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(40, 56, 84, 0.3);
+  color: #fff;
+}
+
+body.mm-day .gmc-nav-today.gmc-nav-current:not(.gmc-pressed),
+.gmc-light .gmc-nav-today.gmc-nav-current:not(.gmc-pressed) {
+  color: #7dd3fc;
 }
 
 /* === Reduced motion / Pi profile: static glass, no compositor animation === */

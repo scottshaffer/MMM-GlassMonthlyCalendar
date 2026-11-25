@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.2]
+
+- Touch buttons: darker background (navy glass at night, deep navy in day mode) and slightly larger
+  (52 px). Pressing a button fills it with a bright color at once; the view changes a moment later
+  and the button flashes with a spreading ring to confirm the tap. Double taps are ignored.
+
 ## [0.4.1]
 
 - Day mode: events are a deep shade of each calendar's color with white text instead of pale tints,

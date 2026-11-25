@@ -142,9 +142,12 @@ The week rows share the height evenly, and each day shows as many event cards as
 
 ### Switching views and picking a month
 
-The title bar has a **2 Weeks | 4 Weeks | Month** switch. The view you pick stays until you pick
-another (or MagicMirror restarts); `mode` is the view it starts in. Switching keeps roughly the
-same dates in view.
+The calendar button in the title bar switches between the 2-week and 4-week views: each tap moves
+to the other one. The view you pick stays until you tap again (or MagicMirror restarts); `mode` is
+the view it starts in. Switching keeps roughly the same dates in view. To add Month view to the
+rotation, use `viewSwitch: ["twoWeeks", "fourWeeks", "currentMonth"]`.
+
+![2 weeks](screenshots/two-weeks.png)
 
 Tap the title (the dates, with the ⌄ beside them) to open a month picker: the 12 months of a year,
 with arrows to change the year. The current month is outlined and the month in view is filled. Pick
@@ -244,7 +247,7 @@ Every option at its default:
     // Touch
     touchNavigation: true,
     navigationResetSeconds: 120,
-    viewSwitch: ["twoWeeks", "fourWeeks", "currentMonth"],
+    viewSwitch: ["twoWeeks", "fourWeeks"],
     monthPicker: true,
     eventPopup: true,
     popupTimeout: 45,
@@ -313,7 +316,7 @@ Options added by this module:
 | `rowHeight` | `128` | With `height: "auto"`: minimum height of each week row, px |
 | `maxEventLanes` | `0` | Rows of all-day / multi-day bars per week (compact: rows of events) before "+N more"; `0` = as many as fit |
 | `touchNavigation` | `true` | ‹ Today › buttons in the title bar. They move by a month, or by the view length in week modes. A pressed button lights up, then flashes once when the view changes |
-| `viewSwitch` | `["twoWeeks", "fourWeeks", "currentMonth"]` | Views offered as buttons in the title bar, in order (any of the `mode` values); `[]` hides the switch |
+| `viewSwitch` | `["twoWeeks", "fourWeeks"]` | Views the calendar button steps through, one per tap (any of the `mode` values); `[]` hides the button |
 | `monthPicker` | `true` | Tap the title to pick a month to show |
 | `eventPopup` | `true` | Tap an event for its details; tap "+N more" for the day's list. `false` turns tapping off |
 | `popupTimeout` | `45` | Seconds before an open popup closes by itself; `0` = stays open until closed |

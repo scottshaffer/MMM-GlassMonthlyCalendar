@@ -595,19 +595,29 @@ const tap = (m, timers, el) => {
   if (t && t.ms === 140) t.fn(); // buttons act after their press flash
 };
 
-test("view switch: 2 Weeks / 4 Weeks / Month buttons change the view and mark the current one", () => {
+test("calendar button toggles between 2 and 4 weeks", () => {
   const { m, timers } = setup({ mode: "fourWeeks" });
-  let views = m.getDom().findAll("gmc-view-btn");
-  assert.equal(views.map((b) => b.textContent).join("|"), "2 Weeks|4 Weeks|Month");
-  assert.ok(views[1].classList.contains("gmc-view-current"));
-  tap(m, timers, views[0]);
+  let btn = m.getDom().findAll("gmc-view-toggle");
+  assert.equal(btn.length, 1);
+  assert.equal(btn[0].findAll("fa-calendar-days").length, 1);
+  assert.equal(btn[0].attrs["aria-label"], "Show 2 Weeks");
+  tap(m, timers, btn[0]);
   let dom = m.getDom();
   assert.equal(dom.findAll("gmc-week").length, 2);
-  assert.ok(dom.findAll("gmc-view-btn")[0].classList.contains("gmc-view-current"));
-  tap(m, timers, dom.findAll("gmc-view-btn")[2]);
-  dom = m.getDom();
-  assert.equal(dom.findAll("gmc-heading-main")[0].textContent, "November");
-  assert.equal(m._range(new Date(NOW)).kind, "month");
+  btn = dom.findAll("gmc-view-toggle");
+  assert.equal(btn[0].attrs["aria-label"], "Show 4 Weeks");
+  assert.ok(btn[0].classList.contains("gmc-nav-flash")); // the press is confirmed after the change
+  tap(m, timers, btn[0]);
+  assert.equal(m.getDom().findAll("gmc-week").length, 4);
+});
+
+test("a mode outside viewSwitch steps to the first view; Month can be added back", () => {
+  const { m, timers } = setup({ mode: "currentMonth" });
+  tap(m, timers, m.getDom().findAll("gmc-view-toggle")[0]);
+  assert.equal(m._mode(), "twoweeks");
+  const r = setup({ viewSwitch: ["twoWeeks", "fourWeeks", "currentMonth"], mode: "fourWeeks" });
+  tap(r.m, r.timers, r.m.getDom().findAll("gmc-view-toggle")[0]);
+  assert.equal(r.m._mode(), "currentmonth");
 });
 
 test("switching views keeps the dates you were looking at", () => {
@@ -662,6 +672,6 @@ test("month picker in month view shows the whole month; arrows step from there",
 test("viewSwitch [] and monthPicker false hide the controls", () => {
   const { m } = setup({ viewSwitch: [], monthPicker: false });
   const dom = m.getDom();
-  assert.equal(dom.findAll("gmc-view-btn").length, 0);
+  assert.equal(dom.findAll("gmc-view-toggle").length, 0);
   assert.equal(dom.findAll("gmc-heading")[0].listeners.click, undefined);
 });

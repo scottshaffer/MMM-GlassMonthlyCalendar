@@ -45,7 +45,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
     // ---- Touch navigation (the title-bar arrows) ----
     touchNavigation: true,
     navigationResetSeconds: 120, // return to the current period after this long; 0 = never
-    viewSwitch: ["twoWeeks", "fourWeeks", "currentMonth"], // views offered as buttons in the title bar; [] = none
+    viewSwitch: ["twoWeeks", "fourWeeks"], // the calendar-icon button steps through these views on each tap; [] = no button
     monthPicker: true, // tap the title to pick a month to show
     eventPopup: true, // tap an event for a card with everything known about it; tap "+N more" for the day's list
     popupTimeout: 45, // seconds before an open popup closes by itself; 0 = stays open
@@ -750,13 +750,14 @@ Module.register("MMM-GlassMonthlyCalendar", {
       }
       const views = Array.isArray(c.viewSwitch) ? c.viewSwitch.filter((v) => this._viewLabel(v)) : [];
       if (views.length > 1) {
-        const seg = this._el("div", "gmc-views", right);
+        // One calendar button: each tap moves to the next view in viewSwitch (2 weeks <-> 4 weeks).
         const current = this._mode();
-        for (const v of views) {
-          const b = this._button(seg, null, this._viewLabel(v), () => this._setView(v));
-          b.classList.add("gmc-view-btn");
-          if (String(v).toLowerCase() === current) b.classList.add("gmc-view-current");
-        }
+        const i = views.findIndex((v) => String(v).toLowerCase() === current);
+        const next = views[(i + 1) % views.length];
+        const b = this._button(right, "calendar-days", "View", () => this._setView(next));
+        b.classList.add("gmc-view-toggle");
+        b.setAttribute("aria-label", `Show ${this._viewLabel(next)}`);
+        b.title = `Show ${this._viewLabel(next)}`;
       }
       if (c.touchNavigation) {
         const nav = this._el("div", "gmc-nav", right);

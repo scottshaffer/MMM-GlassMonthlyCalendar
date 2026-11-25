@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1]
+
+- The 2 Weeks / 4 Weeks / Month buttons are replaced by one calendar-icon button that switches
+  between the 2-week and 4-week views on each tap. `viewSwitch` (default `["twoWeeks", "fourWeeks"]`)
+  sets the views it steps through; add `"currentMonth"` to include Month view.
+
 ## [0.6.0]
 
 - View switch in the title bar: 2 Weeks / 4 Weeks / Month (`viewSwitch`). The picked view stays;

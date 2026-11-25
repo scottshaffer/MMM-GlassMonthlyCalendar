@@ -977,54 +977,11 @@ body.mm-day .gmc-event-past,
   color: #fff;
 }
 
-/* === View switch (2 Weeks / 4 Weeks / Month): one joined pill of touch buttons === */
-.gmc-views {
-  display: flex;
-  align-items: center;
-  padding: 4px;
-  gap: 4px;
-  border-radius: 999px;
-  background: rgba(4, 10, 30, 0.45);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.gmc-views .gmc-view-btn {
-  height: 46px;
-  min-width: 0;
-  padding: 0 18px;
-  font-size: 15px;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  color: color-mix(in srgb, #fff 78%, transparent);
-}
-
-.gmc-views .gmc-view-btn.gmc-view-current:not(.gmc-pressed) {
-  border-color: rgba(255, 255, 255, 0.24);
-  background: linear-gradient(160deg, rgba(40, 60, 110, 0.95), rgba(20, 32, 66, 0.95));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 3px 10px rgba(0, 8, 30, 0.35);
-  color: #fff;
-}
-
-body.mm-day .gmc-views,
-.gmc-light .gmc-views {
-  background: rgba(11, 21, 48, 0.12);
-  box-shadow: inset 0 1px 3px rgba(11, 21, 48, 0.18);
-}
-
-body.mm-day .gmc-views .gmc-view-btn:not(.gmc-pressed),
-.gmc-light .gmc-views .gmc-view-btn:not(.gmc-pressed) {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  color: #1d2738;
-}
-
-body.mm-day .gmc-views .gmc-view-btn.gmc-view-current:not(.gmc-pressed),
-.gmc-light .gmc-views .gmc-view-btn.gmc-view-current:not(.gmc-pressed) {
-  background: linear-gradient(160deg, #2b3f66, #16233f);
-  box-shadow: 0 3px 10px rgba(40, 56, 84, 0.3);
-  color: #fff;
+/* === View button: a calendar icon that toggles 2 weeks / 4 weeks === */
+.gmc-view-toggle {
+  padding: 0;
+  width: 52px;
+  font-size: 21px;
 }
 
 /* === Tappable title: opens the month picker === */

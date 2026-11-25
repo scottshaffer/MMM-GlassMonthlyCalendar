@@ -195,16 +195,14 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease;
 }
 
-/* Pressed: sinks and fills with the press color straight away */
-.gmc-nav-btn:active,
+/* Pressed: fills with the press color straight away. Only colors change (no scaling or glow),
+   so it draws in a single frame even on a Raspberry Pi. */
 .gmc-nav-btn.gmc-pressed {
-  transform: scale(0.9);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--gmc-press) 80%, white), var(--gmc-press));
-  border-color: color-mix(in srgb, var(--gmc-press) 60%, white);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gmc-press) 35%, transparent), 0 0 22px color-mix(in srgb, var(--gmc-press) 70%, transparent);
+  background: var(--gmc-press);
+  border-color: var(--gmc-press);
+  box-shadow: none;
   color: #06142b;
 }
 
@@ -737,12 +735,11 @@ body.mm-day .gmc-event-past,
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.1s ease, filter 0.1s ease;
 }
 
 .gmc-tappable.gmc-pressed {
-  transform: scale(0.96);
-  filter: brightness(1.35);
+  outline: 2px solid var(--gmc-press);
+  outline-offset: 1px;
 }
 
 .gmc-more.gmc-tappable {
@@ -977,8 +974,7 @@ body.mm-day .gmc-event-past,
 }
 
 .gmc-heading.gmc-tappable.gmc-pressed {
-  transform: scale(0.98);
-  filter: none;
+  outline: none;
   background: color-mix(in srgb, var(--gmc-press) 22%, transparent);
 }
 
@@ -1039,8 +1035,7 @@ body.mm-day .gmc-event-past,
 }
 
 .gmc-month-tile.gmc-pressed {
-  transform: scale(0.94);
-  filter: none;
+  outline: none;
   background: var(--gmc-press);
   color: #06142b;
 }
@@ -1064,4 +1059,35 @@ body.mm-day .gmc-event-past,
   border-color: rgba(11, 21, 48, 0.25);
   background: linear-gradient(160deg, #2b3f66, #16233f);
   color: #fff;
+}
+
+/* === Raspberry Pi profile (performanceProfile "pi", detected automatically) ===
+   Blurring everything behind a window this size is the costliest thing on screen, and it is
+   redone on every redraw. Over a soft background the blur is barely visible, so the Pi gets
+   slightly more solid glass instead and taps redraw much faster. */
+.gmc-window.gmc-pi {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 40%, rgba(10, 18, 48, 0.22)) padding-box,
+    radial-gradient(90% 70% at 0% 0%, rgba(134, 239, 255, 0.2), rgba(37, 99, 235, 0) 70%) padding-box,
+    radial-gradient(80% 80% at 100% 100%, rgba(165, 180, 252, 0.18), rgba(99, 102, 241, 0) 70%) padding-box,
+    linear-gradient(rgba(14, 24, 60, 0.58), rgba(14, 24, 60, 0.58)) padding-box,
+    linear-gradient(135deg, rgba(186, 240, 255, 0.75), rgba(255, 255, 255, 0.10) 30%, rgba(255, 255, 255, 0.06) 62%, rgba(165, 180, 252, 0.65)) border-box;
+}
+
+.gmc-window.gmc-pi::after {
+  filter: none;
+  opacity: 0.6;
+}
+
+body.mm-day .gmc-window.gmc-pi,
+.gmc-window.gmc-pi.gmc-light {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.78)) padding-box,
+    radial-gradient(90% 70% at 0% 0%, rgba(125, 211, 252, 0.28), rgba(37, 99, 235, 0) 70%) padding-box,
+    radial-gradient(80% 80% at 100% 100%, rgba(165, 180, 252, 0.26), rgba(99, 102, 241, 0) 70%) padding-box,
+    linear-gradient(135deg, rgba(56, 189, 248, 0.6), rgba(255, 255, 255, 0.5) 35%, rgba(255, 255, 255, 0.4) 65%, rgba(129, 140, 248, 0.55)) border-box;
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0]
+
+- Faster taps, especially on a Raspberry Pi: buttons act on the next frame instead of after a fixed
+  pause, the press is a plain color change (no scaling or glow to redraw, and no bounce when the view
+  changes), and taps redraw the window in place instead of through MagicMirror's updateDom.
+- Pi profile (`performanceProfile: "pi"`, detected automatically): the window drops its background
+  blur, the costliest thing to redraw, for slightly more solid glass.
+- Tapped events and month tiles show a simple outline instead of scaling.
+
 ## [0.6.5]
 
 - Touch buttons light up once: on a touch screen, lifting the finger no longer switches the

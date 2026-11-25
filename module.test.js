@@ -43,6 +43,12 @@ class FakeElement {
   removeChild(c) {
     this.children = this.children.filter((x) => x !== c);
   }
+  replaceChild(fresh, old) {
+    const i = this.children.indexOf(old);
+    if (i >= 0) this.children[i] = fresh;
+    fresh.parentNode = this;
+    old.parentNode = null;
+  }
   setAttribute(k, v) {
     this.attrs[k] = v;
   }
@@ -319,27 +325,24 @@ test("week mode title shows the date range; week numbers add a column", () => {
   assert.match(dom.style["--gmc-columns"], /^3\.2ch /);
 });
 
-test("touch buttons: one press light that stays on until the view changes, no second flash", () => {
+test("touch buttons: lit at once, act on the next frame, redraw in place", () => {
   const { m, timers } = setup();
-  const btns = m.getDom().findAll("gmc-nav")[0].findAll("gmc-nav-btn");
-  assert.equal(btns.length, 3);
-  const next = btns[2];
+  const host = new (m.getDom().constructor)("div");
+  host.appendChild(m.getDom()); // the window as MagicMirror places it
+  const next = host.children[0].findAll("gmc-nav")[0].findAll("gmc-nav-btn")[2];
   next.listeners.pointerdown({});
   assert.ok(next.classList.contains("gmc-pressed"));
-  // lifting the finger does not switch it off (no pointerup / pointerleave handlers)
-  assert.equal(next.listeners.pointerup, undefined);
-  assert.equal(next.listeners.pointerleave, undefined);
   next.listeners.click({});
-  assert.ok(next.classList.contains("gmc-pressed"));
   assert.equal(m.navOffset, 0);
-  const t = timers.find((x) => x.ms === 120);
-  assert.ok(t);
+  const t = timers.at(-1);
+  assert.equal(t.ms, 0); // no deliberate delay (one frame in the browser)
+  const updatesBefore = m.domUpdates;
   t.fn();
   assert.equal(m.navOffset, 1);
-  const redrawn = m.getDom();
-  assert.equal(redrawn.findAll("gmc-heading-main")[0].textContent, "December");
-  assert.equal(redrawn.findAll("gmc-nav-flash").length, 0); // nothing flashes after the redraw
-  assert.equal(redrawn.findAll("gmc-pressed").length, 0);
+  assert.equal(m.domUpdates, updatesBefore); // swapped in place, not through updateDom
+  assert.equal(host.children.length, 1);
+  assert.equal(host.children[0].findAll("gmc-heading-main")[0].textContent, "December");
+  assert.equal(host.children[0].findAll("gmc-pressed").length, 0);
 });
 
 test("a touch that slides away without tapping goes dark again", () => {
@@ -601,8 +604,8 @@ test("eventPopup: false leaves events untappable", () => {
 const tap = (m, timers, el) => {
   m.lastPress = 0; // the test clock is frozen, so two taps would look like a double tap
   el.listeners.click({});
-  const t2 = timers.slice().reverse().find((x) => x.ms === 120);
-  if (t2) t2.fn(); // buttons act a moment after the press lights up
+  const t2 = timers.at(-1);
+  if (t2 && t2.ms === 0) t2.fn(); // buttons act on the next frame
 };
 
 test("calendar button toggles between 2 and 4 weeks", () => {
@@ -736,4 +739,9 @@ test("notes and location sent as the text \"false\" (or null, \"\", spaces) show
   // event cards in the grid: only E has a location line
   const locs = m.getDom().findAll("gmc-card-location").map((l) => l.text());
   assert.equal(locs.join("|"), "Park");
+});
+
+test("the Pi profile uses the lighter (unblurred) glass", () => {
+  assert.ok(setup({ performanceProfile: "pi" }).m.getDom().classList.contains("gmc-pi"));
+  assert.ok(!setup({ performanceProfile: "full" }).m.getDom().classList.contains("gmc-pi"));
 });

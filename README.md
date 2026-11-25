@@ -155,7 +155,7 @@ All options are optional. The ones you are most likely to change come first.
 | `maxWidth` / `rowHeight` | `0` / `128` | Width cap in px (`0` = none); row height with `height: "auto"` |
 | `locale` / `timeFormat` | `null` | Override MagicMirror's `language` / `timeFormat` (12 or 24) |
 | `updateDelay` / `animationSpeed` | `5` / `600` | Seconds to wait for all calendars; redraw fade in ms |
-| `performanceProfile` / `reduceMotion` | `"auto"` / `false` | `"pi"` or `reduceMotion: true` turn off the window's background animation |
+| `performanceProfile` / `reduceMotion` | `"auto"` / `false` | `"pi"` (detected automatically on a Raspberry Pi) drops the window's background blur and animation for faster taps; `"full"` keeps them; `reduceMotion: true` only stops the animation |
 
 Day-mode event colors can be made darker or lighter in `custom.css` (lower = darker):
 `.gmc-window { --gmc-day-shade: 50%; }` (default 58%).

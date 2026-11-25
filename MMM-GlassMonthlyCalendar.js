@@ -259,7 +259,24 @@ Module.register("MMM-GlassMonthlyCalendar", {
 
   _redraw(speed) {
     this.displayedDay = this._ordinal(new Date());
+    // Instant redraws (taps) swap the window in place: faster on a Pi than MagicMirror's updateDom,
+    // which compares the old and new HTML first.
+    if (speed === 0 && this.windowEl && this.windowEl.parentNode && this.windowEl.parentNode.replaceChild) {
+      const old = this.windowEl;
+      const fresh = this.getDom();
+      old.parentNode.replaceChild(fresh, old);
+      return;
+    }
     this.updateDom(speed == null ? this.config.animationSpeed : speed);
+  },
+
+  // Run fn once the browser has painted the current frame (so a press shows before heavy work).
+  _afterPaint(fn) {
+    if (typeof window !== "undefined" && window.requestAnimationFrame) {
+      window.requestAnimationFrame(() => window.requestAnimationFrame(fn));
+    } else {
+      setTimeout(fn, 0);
+    }
   },
 
   _navigate(step) {
@@ -668,9 +685,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
     return [...seen.entries()];
   },
 
-  // Touch buttons. A touch lights the button once, and it stays lit until the action runs a moment
-  // later. Lifting the finger does not turn it off first (that read as a second flash on touch
-  // screens), and nothing flashes again after the calendar redraws.
+  // Touch buttons. A touch lights the button at once (a plain color change, cheap to draw on a
+  // Pi); the action runs as soon as that frame is on screen, and the redraw replaces the button.
   _button(parent, icon, label, action) {
     const b = this._el("button", "gmc-nav-btn", parent);
     b.type = "button";
@@ -683,13 +699,12 @@ Module.register("MMM-GlassMonthlyCalendar", {
       releaseTimer = null;
       b.classList.remove("gmc-pressed");
     };
-    const press = () => {
+    b.addEventListener("pointerdown", () => {
       b.classList.add("gmc-pressed");
       // If no tap follows (the finger slid away), go dark again.
       if (releaseTimer) clearTimeout(releaseTimer);
       releaseTimer = setTimeout(release, 700);
-    };
-    b.addEventListener("pointerdown", press);
+    });
     for (const t of ["pointercancel", "touchcancel"]) b.addEventListener(t, release);
     b.addEventListener("click", (ev) => {
       if (ev && ev.stopPropagation) ev.stopPropagation();
@@ -697,12 +712,10 @@ Module.register("MMM-GlassMonthlyCalendar", {
       if (this.lastPress && now - this.lastPress < 300) return; // ignore a double tap
       this.lastPress = now;
       b.classList.add("gmc-pressed");
-      this._clear("pressTimer");
-      this.pressTimer = setTimeout(() => {
-        this.pressTimer = null;
+      this._afterPaint(() => {
         if (typeof action === "function") action();
         else this._navigate(action);
-      }, 120);
+      });
     });
     return b;
   },
@@ -723,6 +736,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
     if (this._dayScope() === "calendar" && this.isDay) win.classList.add("gmc-light");
     win.classList.add(glass ? "gmc-glass-events" : "gmc-solid-events");
     if (this.reduceMotion) win.classList.add("gmc-reduced");
+    if (this.performanceProfile === "pi") win.classList.add("gmc-pi");
     if (c.wrapTitles) win.classList.add("gmc-wrap");
     const vp = this._viewport();
     const rowPx = this._rowHeight(range.weeks, vp);

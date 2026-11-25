@@ -140,6 +140,20 @@ The week rows share the height evenly, and each day shows as many event cards as
 
 ![Day mode](screenshots/preview-day.png)
 
+### Event details
+
+Tap any event (a card, an all-day bar, or a compact entry) to open a card with everything the
+calendar module knows about it: the calendar it comes from (with its color), the title, the date,
+the times and duration (or "All day"), whether it has ended or is happening now, the location, and
+the event's notes (its description). Tap "+N more" for a list of every event that day; tap one in
+the list for its details. Tap ✕ or anywhere outside the card to close it. It also closes by itself
+after `popupTimeout` seconds and when you change month.
+
+![Event details](screenshots/popup.png)
+
+Notes come from Google Calendar's description field. Any formatting in them (links, bold) is shown
+as plain text.
+
 MagicMirror itself has no day/night theme, so the calendar can switch itself:
 
 ```js
@@ -214,6 +228,8 @@ Every option at its default:
     // Touch
     touchNavigation: true,
     navigationResetSeconds: 120,
+    eventPopup: true,
+    popupTimeout: 45,
 
     // Behaviour
     updateDelay: 5,
@@ -279,6 +295,8 @@ Options added by this module:
 | `rowHeight` | `128` | With `height: "auto"`: minimum height of each week row, px |
 | `maxEventLanes` | `0` | Rows of all-day / multi-day bars per week (compact: rows of events) before "+N more"; `0` = as many as fit |
 | `touchNavigation` | `true` | ‹ Today › buttons in the title bar. They move by a month, or by the view length in week modes. A pressed button lights up, then flashes once when the view changes |
+| `eventPopup` | `true` | Tap an event for its details; tap "+N more" for the day's list. `false` turns tapping off |
+| `popupTimeout` | `45` | Seconds before an open popup closes by itself; `0` = stays open until closed |
 | `navigationResetSeconds` | `120` | Go back to the current month after this many seconds; `0` = stay |
 | `updateDelay` | `5` | Seconds to wait for all calendars to report before redrawing (fixed at 5 in the original) |
 | `animationSpeed` | `600` | Cross-fade when the grid redraws, ms |

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0]
+
+- Tap an event for a details card: calendar name and color, title, date, times and duration (or all
+  day), ended / happening now, location and notes (the description, shown as plain text). Tap
+  "+N more" for the day's full list. Closes with ✕, a tap outside, `popupTimeout`, or navigation.
+- Events show press feedback when touched. New options `eventPopup`, `popupTimeout`.
+
 ## [0.4.2]
 
 - Touch buttons: darker background (navy glass at night, deep navy in day mode) and slightly larger

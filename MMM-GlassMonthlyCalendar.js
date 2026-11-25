@@ -45,6 +45,8 @@ Module.register("MMM-GlassMonthlyCalendar", {
     // ---- Touch navigation (the title-bar arrows) ----
     touchNavigation: true,
     navigationResetSeconds: 120, // return to the current period after this long; 0 = never
+    eventPopup: true, // tap an event for a card with everything known about it; tap "+N more" for the day's list
+    popupTimeout: 45, // seconds before an open popup closes by itself; 0 = stays open
 
     // ---- Behaviour ----
     updateDelay: 5, // seconds to wait for the calendar module to finish broadcasting
@@ -254,6 +256,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
   },
 
   _navigate(step) {
+    this._closePopup();
     this.navOffset = step === 0 ? 0 : this.navOffset + step;
     this._clear("navTimer");
     const reset = Number(this.config.navigationResetSeconds) || 0;
@@ -758,8 +761,10 @@ Module.register("MMM-GlassMonthlyCalendar", {
     }
   },
 
-  _moreEl(parent, n) {
-    return this._el("div", "gmc-more", parent, `+${n} more`);
+  _moreEl(parent, n, date) {
+    const el = this._el("div", "gmc-more", parent, `+${n} more`);
+    if (date) this._tappable(el, () => this._openDay(date));
+    return el;
   },
 
   // Compact layout (the original): every event is a one-line entry packed into lanes.
@@ -790,7 +795,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
     if (hasMore) {
       for (let d = 0; d < 7; d++) {
         if (!hiddenPerDay[d]) continue;
-        const more = this._moreEl(row, hiddenPerDay[d]);
+        const more = this._moreEl(row, hiddenPerDay[d], this._addDays(weekStart, d));
         more.style.gridColumn = String(d + 1 + ctx.weekCol);
         more.style.gridRow = String(shownLanes + 2);
       }
@@ -841,7 +846,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
 
     for (let d = 0; d < 7; d++) {
       if (hiddenBars[d]) {
-        const more = this._moreEl(row, hiddenBars[d]);
+        const more = this._moreEl(row, hiddenBars[d], this._addDays(weekStart, d));
         more.style.gridColumn = String(d + 1 + ctx.weekCol);
         more.style.gridRow = String(shownBars + 2);
       }
@@ -861,11 +866,11 @@ Module.register("MMM-GlassMonthlyCalendar", {
         const needMore = restAfter > 0 ? M.cardGap + M.more : 0;
         if (room != null && used + h + needMore > room) {
           // Not enough room for this card (plus the "+N more" line after it).
-          if (room - used >= M.more + (i ? M.cardGap : 0)) this._moreEl(stack, list.length - i);
+          if (room - used >= M.more + (i ? M.cardGap : 0)) this._moreEl(stack, list.length - i, this._addDays(weekStart, d));
           else if (stack.children && stack.children.length) {
             // Swap the last card for the "+N more" line.
             stack.removeChild(stack.children[stack.children.length - 1]);
-            this._moreEl(stack, list.length - i + 1);
+            this._moreEl(stack, list.length - i + 1, this._addDays(weekStart, d));
           }
           break;
         }
@@ -908,6 +913,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
       if (l.icon) this._el("i", `fa fa-${l.icon}`, line);
       this._el("span", null, line, l.text);
     }
+    this._tappable(card, () => this._openEvent(e));
     return card;
   },
 
@@ -920,6 +926,164 @@ Module.register("MMM-GlassMonthlyCalendar", {
       return `${a.replace(/[ap]m$/, "")} – ${b}`;
     }
     return `${a} – ${b}`;
+  },
+
+  /* ---------- event popup ---------- */
+
+  // Make an element respond to a tap (with the same press feedback as the buttons).
+  _tappable(el, onTap) {
+    if (!this.config.eventPopup) return;
+    el.classList.add("gmc-tappable");
+    const press = () => el.classList.add("gmc-pressed");
+    const release = () => el.classList.remove("gmc-pressed");
+    el.addEventListener("pointerdown", press);
+    for (const t of ["pointerup", "pointercancel", "pointerleave"]) el.addEventListener(t, release);
+    el.addEventListener("click", (ev) => {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      release();
+      onTap();
+    });
+  },
+
+  // Calendar descriptions can contain HTML (Google adds links and <br>). Show them as plain text:
+  // the markup is parsed in an inert document and only its text is kept, never inserted as HTML.
+  _plainText(value) {
+    if (value == null) return "";
+    let text = String(value)
+      .replace(/\\n/g, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+      .replace(/<li[^>]*>/gi, "• ");
+    if (/[<&]/.test(text)) {
+      if (typeof DOMParser !== "undefined") {
+        text = new DOMParser().parseFromString(`<body>${text}</body>`, "text/html").body.textContent || "";
+      } else {
+        text = text.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+          .replace(/&quot;/g, "\"").replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+      }
+    }
+    return text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  },
+
+  // Date line and time line for the popup.
+  _whenText(e) {
+    const locale = this._locale();
+    const longDay = new Intl.DateTimeFormat(locale, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const shortDay = new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric" });
+    if (e.fullDayEvent) {
+      if (!e.multiDayEvent) return { date: longDay.format(e.startDate), time: "All day" };
+      const days = this._ordinal(e.endDate) - this._ordinal(e.startDate) + 1;
+      return { date: `${shortDay.format(e.startDate)} – ${shortDay.format(e.endDate)}`, time: `All day · ${days} days` };
+    }
+    if (!e.multiDayEvent) {
+      const mins = Math.round((e.endDate - e.startDate) / 60000);
+      const dur = mins <= 0 ? "" : mins < 60 ? ` (${mins} min)` : ` (${+(mins / 60).toFixed(1)} hr)`;
+      return { date: longDay.format(e.startDate), time: `${this._formatRange(e.startDate, e.endDate)}${dur}` };
+    }
+    return {
+      date: `${shortDay.format(e.startDate)} – ${shortDay.format(e.endDate)}`,
+      time: `${shortDay.format(e.startDate)} ${this._formatTime(e.startDate)} – ${shortDay.format(e.endDate)} ${this._formatTime(e.endDate)}`
+    };
+  },
+
+  // The overlay (on top of the whole screen) and an empty glass card with a close button.
+  _popupShell(color) {
+    this._closePopup();
+    const overlay = this._el("div", "gmc-popup-overlay");
+    if ((this._dayScope() === "calendar" && this.isDay) ||
+      (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("mm-day"))) {
+      overlay.classList.add("gmc-light");
+    }
+    const card = this._el("div", "gmc-popup", overlay);
+    if (color) card.style.setProperty("--gmc-ev", color);
+    overlay.addEventListener("click", (ev) => {
+      if (!ev || ev.target === overlay) this._closePopup();
+    });
+    card.addEventListener("click", (ev) => ev && ev.stopPropagation && ev.stopPropagation());
+    const close = this._el("button", "gmc-nav-btn gmc-popup-close", card);
+    close.type = "button";
+    close.setAttribute("aria-label", "Close");
+    this._el("i", "fa fa-xmark", close);
+    close.addEventListener("click", () => this._closePopup());
+    if (typeof document !== "undefined" && document.body) document.body.appendChild(overlay);
+    this.popupEl = overlay;
+    this._clear("popupTimer");
+    const t = Number(this.config.popupTimeout) || 0;
+    if (t > 0) this.popupTimer = setTimeout(() => this._closePopup(), t * 1000);
+    return card;
+  },
+
+  _closePopup() {
+    this._clear("popupTimer");
+    const el = this.popupEl;
+    this.popupEl = null;
+    if (!el) return;
+    if (el.remove) el.remove();
+    else if (el.parentNode) el.parentNode.removeChild(el);
+  },
+
+  _popupRow(parent, icon, text, cls) {
+    const row = this._el("div", `gmc-popup-row${cls ? ` ${cls}` : ""}`, parent);
+    this._el("i", `fa fa-${icon}`, row);
+    this._el("span", null, row, text);
+    return row;
+  },
+
+  // Everything the calendar module sent about one event.
+  _openEvent(e) {
+    const card = this._popupShell(e.color);
+    card.classList.add("gmc-popup-event");
+
+    const cal = this._el("div", "gmc-popup-calendar", card);
+    this._el("span", "gmc-dot", cal);
+    this._el("span", null, cal, e.calendarName || "Calendar");
+
+    const title = this._el("div", "gmc-popup-title", card);
+    if (Array.isArray(e.symbol)) for (const s of e.symbol) if (s) this._el("span", `gmc-event-symbol fa fa-${s}`, title);
+    this._el("span", null, title, e.title || "(No title)");
+
+    const now = new Date();
+    const status = e.endDate < now ? "Ended" : e.startDate <= now ? "Happening now" : null;
+    const when = this._whenText(e);
+    this._popupRow(card, "calendar", when.date);
+    this._popupRow(card, "clock", status ? `${when.time} · ${status}` : when.time);
+
+    const location = this._plainText(e.location);
+    if (location) this._popupRow(card, "location-dot", location, "gmc-popup-location");
+
+    const notes = this._plainText(e.description);
+    if (notes) {
+      this._el("div", "gmc-popup-label", card, "Notes");
+      this._el("div", "gmc-popup-notes", card, notes);
+    }
+    return card;
+  },
+
+  // Every event on one day (for "+N more"); tap one for its details.
+  _openDay(date) {
+    const ord = this._ordinal(date);
+    const events = this.events
+      .filter((e) => this._ordinal(e.startDate) <= ord && this._ordinal(e.endDate) >= ord)
+      .sort((a, b) => (b.fullDayEvent ? 1 : 0) - (a.fullDayEvent ? 1 : 0) || a.startDate - b.startDate);
+    const card = this._popupShell(null);
+    card.classList.add("gmc-popup-day");
+    const fmt = new Intl.DateTimeFormat(this._locale(), { weekday: "long", month: "long", day: "numeric" });
+    this._el("div", "gmc-popup-title", card, fmt.format(date));
+    const list = this._el("div", "gmc-popup-list", card);
+    for (const e of events) {
+      const item = this._el("div", "gmc-popup-item", list);
+      if (e.color) item.style.setProperty("--gmc-ev", e.color);
+      this._el("span", "gmc-dot", item);
+      const timedToday = !e.fullDayEvent && this._ordinal(e.startDate) === ord;
+      this._el("span", "gmc-popup-item-time", item, timedToday ? this._formatTime(e.startDate) : "All day");
+      this._el("span", "gmc-popup-item-title", item, e.title);
+      this._el("i", "fa fa-chevron-right gmc-popup-item-go", item);
+      item.addEventListener("click", (ev) => {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        this._openEvent(e);
+      });
+    }
+    return card;
   },
 
   _eventEl(seg, weekCol, todayOrd, glass) {
@@ -957,6 +1121,7 @@ Module.register("MMM-GlassMonthlyCalendar", {
         bar.style.color = e.color;
       }
     }
+    this._tappable(bar, () => this._openEvent(e));
     return bar;
   }
 });

@@ -33,7 +33,12 @@ class FakeElement {
   }
   appendChild(c) {
     this.children.push(c);
+    c.parentNode = this;
     return c;
+  }
+  remove() {
+    if (this.parentNode) this.parentNode.removeChild(this);
+    this.parentNode = null;
   }
   removeChild(c) {
     this.children = this.children.filter((x) => x !== c);
@@ -83,7 +88,7 @@ function setup(overrides = {}, globalConfig = { language: "en-US", timeFormat: 1
     Date: FixedDate,
     Math,
     console,
-    document: { createElement: (t) => new FakeElement(t) },
+    document: { createElement: (t) => new FakeElement(t), body: new FakeElement("body") },
     setTimeout: (fn, ms) => (timers.push({ fn, ms }), timers.length),
     clearTimeout() {},
     setInterval: (fn, ms) => (timers.push({ fn, ms, interval: true }), timers.length)
@@ -501,4 +506,84 @@ test("calendarColors off keeps the colors as sent", () => {
   const { m, timers } = setup({ calendarColors: "off" });
   feed(m, timers, [ev("A", ms(2026, 10, 25, 9), ms(2026, 10, 25, 10), { calendarName: "Scott", color: "#fff" })]);
   assert.equal(m.events[0].color, "#fff");
+});
+
+test("tapping an event opens a card with everything known about it", () => {
+  const { m, timers } = setup({ mode: "fourWeeks" });
+  feed(m, timers, [
+    ev("Cataract surgery", ms(2026, 11, 14, 8), ms(2026, 11, 14, 10), {
+      calendarName: "Scott", color: "#34d399", location: "Houston Eye Associates\n2855 Gramercy St",
+      description: "Arrive 30 min early.<br>Bring <b>insurance card</b> &amp; photo ID.\\nDriver needed: Rudy"
+    })
+  ]);
+  const dom = m.getDom();
+  const card = dom.findAll("gmc-card")[0];
+  assert.ok(card.classList.contains("gmc-tappable"));
+  card.listeners.click({});
+  const overlay = m.popupEl;
+  assert.ok(overlay && overlay.parentNode); // on the page
+  const pop = overlay.findAll("gmc-popup")[0];
+  assert.equal(pop.style["--gmc-ev"], "#34d399");
+  assert.equal(pop.findAll("gmc-popup-calendar")[0].text(), "Scott");
+  assert.equal(pop.findAll("gmc-popup-title")[0].text(), "Cataract surgery");
+  const rows = pop.findAll("gmc-popup-row").map((r) => r.text());
+  assert.equal(rows[0], "Monday, December 14, 2026");
+  assert.equal(rows[1], "8 – 10am (2 hr)");
+  assert.equal(rows[2], "Houston Eye Associates\n2855 Gramercy St");
+  const notes = pop.findAll("gmc-popup-notes")[0].textContent;
+  assert.equal(notes, "Arrive 30 min early.\nBring insurance card & photo ID.\nDriver needed: Rudy");
+  // close button removes it
+  pop.findAll("gmc-popup-close")[0].listeners.click({});
+  assert.equal(m.popupEl, null);
+  assert.equal(overlay.parentNode, null);
+});
+
+test("popup closes by itself after popupTimeout and when navigating", () => {
+  const { m, timers } = setup({ popupTimeout: 30 });
+  feed(m, timers, [ev("Golf", ms(2026, 10, 25, 10), ms(2026, 10, 25, 12))]);
+  m._openEvent(m.events[0]);
+  const t = timers.at(-1);
+  assert.equal(t.ms, 30000);
+  t.fn();
+  assert.equal(m.popupEl, null);
+  m._openEvent(m.events[0]);
+  m._navigate(1);
+  assert.equal(m.popupEl, null);
+});
+
+test("all-day, multi-day and now/ended wording", () => {
+  const { m, timers } = setup();
+  feed(m, timers, [
+    ev("Thanksgiving", ms(2026, 10, 26), ms(2026, 10, 27), { fullDayEvent: true }),
+    ev("Grandkids visiting", ms(2026, 10, 21), ms(2026, 10, 25), { fullDayEvent: true }),
+    ev("Call", ms(2026, 10, 23, 20, 30), ms(2026, 10, 23, 21)),
+    ev("Pickleball", ms(2026, 10, 23, 9), ms(2026, 10, 23, 10, 30))
+  ]);
+  const rows = (t) => m._openEvent(m.events.find((e) => e.title === t)).findAll("gmc-popup-row").map((r) => r.text());
+  assert.deepEqual([...rows("Thanksgiving")], ["Thursday, November 26, 2026", "All day"]);
+  assert.deepEqual([...rows("Grandkids visiting")], ["Sat, Nov 21 – Tue, Nov 24", "All day · 4 days · Happening now"]);
+  assert.equal(rows("Call")[1], "8:30 – 9pm (30 min) · Happening now");
+  assert.equal(rows("Pickleball")[1], "9 – 10:30am (1.5 hr) · Ended");
+});
+
+test("+N more opens the day's full list; an item opens its details", () => {
+  const { m, timers } = setup({ mode: "fourWeeks" });
+  m._viewport = () => ({ width: 1800, height: 960 });
+  feed(m, timers, [8, 9, 10, 11, 12, 13].map((h) => ev(`Event ${h}`, ms(2026, 10, 25, h), ms(2026, 10, 25, h, 30)))
+    .concat([ev("Holiday", ms(2026, 10, 25), ms(2026, 10, 26), { fullDayEvent: true })]));
+  const more = m.getDom().findAll("gmc-more")[0];
+  more.listeners.click({});
+  const items = m.popupEl.findAll("gmc-popup-item");
+  assert.equal(items.length, 7);
+  assert.equal(items[0].text().startsWith("All day"), true);
+  items[3].listeners.click({});
+  assert.equal(m.popupEl.findAll("gmc-popup-title")[0].text(), "Event 10");
+});
+
+test("eventPopup: false leaves events untappable", () => {
+  const { m, timers } = setup({ eventPopup: false });
+  feed(m, timers, [ev("Golf", ms(2026, 10, 25, 10), ms(2026, 10, 25, 12))]);
+  const card = m.getDom().findAll("gmc-card")[0];
+  assert.ok(!card.classList.contains("gmc-tappable"));
+  assert.equal(card.listeners.click, undefined);
 });

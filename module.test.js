@@ -705,3 +705,26 @@ test("the details card closes after 30 seconds by default; popupTimeout changes 
   m._openEvent(m.events[0]);
   assert.equal(timers.length, before); // no auto-close
 });
+
+test("notes and location sent as the text \"false\" (or null, \"\", spaces) show nothing", () => {
+  const { m, timers } = setup();
+  feed(m, timers, [
+    ev("A", ms(2026, 10, 25, 9), ms(2026, 10, 25, 10), { description: "false", location: "false" }),
+    ev("B", ms(2026, 10, 25, 11), ms(2026, 10, 25, 12), { description: " FALSE ", location: null }),
+    ev("C", ms(2026, 10, 25, 13), ms(2026, 10, 25, 14), { description: "", location: "   " }),
+    ev("D", ms(2026, 10, 25, 15), ms(2026, 10, 25, 16), { description: "undefined" }),
+    ev("E", ms(2026, 10, 25, 17), ms(2026, 10, 25, 18), { description: "Bring snacks", location: "Park" })
+  ]);
+  for (const e of m.events) {
+    const card = m._openEvent(e);
+    assert.ok(!card.text().toLowerCase().includes("false"), e.title);
+    assert.ok(!card.text().includes("undefined"), e.title);
+    const hasNotes = card.findAll("gmc-popup-notes").length > 0;
+    const hasLoc = card.findAll("gmc-popup-location").length > 0;
+    assert.equal(hasNotes, e.title === "E", e.title);
+    assert.equal(hasLoc, e.title === "E", e.title);
+  }
+  // event cards in the grid: only E has a location line
+  const locs = m.getDom().findAll("gmc-card-location").map((l) => l.text());
+  assert.equal(locs.join("|"), "Park");
+});

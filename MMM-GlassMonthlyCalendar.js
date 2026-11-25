@@ -164,6 +164,9 @@ Module.register("MMM-GlassMonthlyCalendar", {
       if (!raw || hidden.includes(raw.calendarName)) continue;
       const e = Object.assign({}, raw);
       e.title = e.title == null ? "" : String(e.title);
+      // Empty notes and locations can arrive as false, null, "" or even the text "false".
+      e.description = this._cleanField(raw.description);
+      e.location = this._cleanField(raw.location);
       e.startDate = new Date(+raw.startDate);
       e.endDate = new Date(+raw.endDate);
       if (isNaN(e.startDate) || isNaN(e.endDate)) continue;
@@ -1079,9 +1082,18 @@ Module.register("MMM-GlassMonthlyCalendar", {
 
   // Calendar descriptions can contain HTML (Google adds links and <br>). Show them as plain text:
   // the markup is parsed in an inert document and only its text is kept, never inserted as HTML.
+  // An optional text field as a string, or "" when it is empty in any of the ways calendars send it.
+  _cleanField(value) {
+    if (value == null || typeof value === "boolean") return "";
+    if (typeof value === "object") value = value.val ?? value.value ?? "";
+    const text = String(value).trim();
+    return /^(false|null|undefined|none)$/i.test(text) ? "" : text;
+  },
+
   _plainText(value) {
     // The calendar module sends false (not "") when an event has no description or location.
-    if (value == null || typeof value === "boolean") return "";
+    value = this._cleanField(value);
+    if (!value) return "";
     if (typeof value === "object") value = value.val ?? value.value ?? "";
     let text = String(value)
       .replace(/\\n/g, "\n")

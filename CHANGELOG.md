@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.4]
+
+- Empty notes and locations are cleaned up when events arrive, including when they come through as
+  the text "false" (or "null", "undefined", blank). The popup and event cards then show nothing for
+  them.
+
 ## [0.6.3]
 
 - The event details card now closes by itself after 30 seconds (was 45). `popupTimeout` sets the

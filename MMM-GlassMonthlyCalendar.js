@@ -1080,7 +1080,9 @@ Module.register("MMM-GlassMonthlyCalendar", {
   // Calendar descriptions can contain HTML (Google adds links and <br>). Show them as plain text:
   // the markup is parsed in an inert document and only its text is kept, never inserted as HTML.
   _plainText(value) {
-    if (value == null) return "";
+    // The calendar module sends false (not "") when an event has no description or location.
+    if (value == null || typeof value === "boolean") return "";
+    if (typeof value === "object") value = value.val ?? value.value ?? "";
     let text = String(value)
       .replace(/\\n/g, "\n")
       .replace(/<br\s*\/?>/gi, "\n")

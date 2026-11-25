@@ -675,3 +675,17 @@ test("viewSwitch [] and monthPicker false hide the controls", () => {
   assert.equal(dom.findAll("gmc-view-toggle").length, 0);
   assert.equal(dom.findAll("gmc-heading")[0].listeners.click, undefined);
 });
+
+test("empty notes and location (sent as false) are left out of the popup", () => {
+  const { m, timers } = setup();
+  feed(m, timers, [ev("Golf", ms(2026, 10, 25, 10), ms(2026, 10, 25, 12), { description: false, location: false })]);
+  const card = m._openEvent(m.events[0]);
+  assert.equal(card.findAll("gmc-popup-notes").length, 0);
+  assert.equal(card.findAll("gmc-popup-label").length, 0);
+  assert.equal(card.findAll("gmc-popup-location").length, 0);
+  assert.ok(!card.text().includes("false"));
+  // and the card in the grid shows no location line either
+  assert.equal(m.getDom().findAll("gmc-card-location").length, 0);
+  assert.equal(m._plainText(""), "");
+  assert.equal(m._plainText("   "), "");
+});

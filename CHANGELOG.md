@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.2]
+
+- Event popup: an event with no notes or location no longer shows "false" (the calendar module
+  sends `false` for empty fields); the Notes section is left out instead.
+
 ## [0.6.1]
 
 - The 2 Weeks / 4 Weeks / Month buttons are replaced by one calendar-icon button that switches

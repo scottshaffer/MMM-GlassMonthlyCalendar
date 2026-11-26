@@ -325,36 +325,21 @@ test("week mode title shows the date range; week numbers add a column", () => {
   assert.match(dom.style["--gmc-columns"], /^3\.2ch /);
 });
 
-test("touch buttons: lit at once, act on the next frame, redraw in place", () => {
-  const { m, timers } = setup();
+test("touch buttons act immediately on the tap, with no press state, and redraw in place", () => {
+  const { m } = setup();
   const host = new (m.getDom().constructor)("div");
   host.appendChild(m.getDom()); // the window as MagicMirror places it
   const next = host.children[0].findAll("gmc-nav")[0].findAll("gmc-nav-btn")[2];
-  next.listeners.pointerdown({});
-  assert.ok(next.classList.contains("gmc-pressed"));
-  next.listeners.click({});
-  assert.equal(m.navOffset, 0);
-  const t = timers.at(-1);
-  assert.equal(t.ms, 0); // no deliberate delay (one frame in the browser)
+  assert.equal(next.listeners.pointerdown, undefined); // nothing happens on touch-down
   const updatesBefore = m.domUpdates;
-  t.fn();
-  assert.equal(m.navOffset, 1);
+  next.listeners.click({});
+  assert.equal(m.navOffset, 1); // acted at once, no timer or frame wait
+  assert.ok(!next.classList.contains("gmc-pressed"));
   assert.equal(m.domUpdates, updatesBefore); // swapped in place, not through updateDom
-  assert.equal(host.children.length, 1);
   assert.equal(host.children[0].findAll("gmc-heading-main")[0].textContent, "December");
-  assert.equal(host.children[0].findAll("gmc-pressed").length, 0);
-});
-
-test("a touch that slides away without tapping goes dark again", () => {
-  const { m, timers } = setup();
-  const b = m.getDom().findAll("gmc-nav")[0].findAll("gmc-nav-btn")[0];
-  b.listeners.pointerdown({});
-  assert.ok(b.classList.contains("gmc-pressed"));
-  timers.find((x) => x.ms === 700).fn();
-  assert.ok(!b.classList.contains("gmc-pressed"));
-  b.listeners.pointerdown({});
-  b.listeners.pointercancel({});
-  assert.ok(!b.classList.contains("gmc-pressed"));
+  // a second tap within 300 ms is ignored
+  host.children[0].findAll("gmc-nav")[0].findAll("gmc-nav-btn")[2].listeners.click({});
+  assert.equal(m.navOffset, 1);
 });
 
 test("sunrise and sunset (Chicago, 23 Nov 2026)", () => {
@@ -604,8 +589,6 @@ test("eventPopup: false leaves events untappable", () => {
 const tap = (m, timers, el) => {
   m.lastPress = 0; // the test clock is frozen, so two taps would look like a double tap
   el.listeners.click({});
-  const t2 = timers.at(-1);
-  if (t2 && t2.ms === 0) t2.fn(); // buttons act on the next frame
 };
 
 test("calendar button toggles between 2 and 4 weeks", () => {

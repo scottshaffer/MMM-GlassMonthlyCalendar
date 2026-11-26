@@ -685,37 +685,21 @@ Module.register("MMM-GlassMonthlyCalendar", {
     return [...seen.entries()];
   },
 
-  // Touch buttons. A touch lights the button at once (a plain color change, cheap to draw on a
-  // Pi); the action runs as soon as that frame is on screen, and the redraw replaces the button.
+  // Touch buttons act the moment the tap arrives, with no visual press state to draw first: on a
+  // Raspberry Pi every extra frame before the redraw is noticeable.
   _button(parent, icon, label, action) {
     const b = this._el("button", "gmc-nav-btn", parent);
     b.type = "button";
     b.setAttribute("aria-label", label);
     if (icon) this._el("i", `fa fa-${icon}`, b);
     else b.textContent = label;
-    let releaseTimer = null;
-    const release = () => {
-      if (releaseTimer) clearTimeout(releaseTimer);
-      releaseTimer = null;
-      b.classList.remove("gmc-pressed");
-    };
-    b.addEventListener("pointerdown", () => {
-      b.classList.add("gmc-pressed");
-      // If no tap follows (the finger slid away), go dark again.
-      if (releaseTimer) clearTimeout(releaseTimer);
-      releaseTimer = setTimeout(release, 700);
-    });
-    for (const t of ["pointercancel", "touchcancel"]) b.addEventListener(t, release);
     b.addEventListener("click", (ev) => {
       if (ev && ev.stopPropagation) ev.stopPropagation();
       const now = Date.now();
       if (this.lastPress && now - this.lastPress < 300) return; // ignore a double tap
       this.lastPress = now;
-      b.classList.add("gmc-pressed");
-      this._afterPaint(() => {
-        if (typeof action === "function") action();
-        else this._navigate(action);
-      });
+      if (typeof action === "function") action();
+      else this._navigate(action);
     });
     return b;
   },

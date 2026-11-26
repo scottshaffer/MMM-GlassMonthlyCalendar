@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.1]
+
+- Title-bar buttons no longer change color when pressed; they act the moment the tap arrives,
+  without waiting for a press state to be drawn (about a third faster on a slow CPU).
+
 ## [0.7.0]
 
 - Faster taps, especially on a Raspberry Pi: buttons act on the next frame instead of after a fixed

@@ -197,15 +197,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Pressed: fills with the press color straight away. Only colors change (no scaling or glow),
-   so it draws in a single frame even on a Raspberry Pi. */
-.gmc-nav-btn.gmc-pressed {
-  background: var(--gmc-press);
-  border-color: var(--gmc-press);
-  box-shadow: none;
-  color: #06142b;
-}
-
 .gmc-nav-today.gmc-nav-current:not(.gmc-pressed) {
   color: color-mix(in srgb, var(--gmc-accent) 70%, white);
 }
